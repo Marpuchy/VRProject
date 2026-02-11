@@ -9,6 +9,7 @@ using Unity.Services.Multiplayer;
 using System.Collections;
 using Unity.Netcode.Transports.UTP;
 using Unity.Netcode;
+using System.IO;
 
 namespace XRMultiplayer
 {
@@ -141,6 +142,17 @@ namespace XRMultiplayer
                         // loop through all sessions and check for available slots
                         foreach (var session in results.Sessions)
                         {
+                            if (CheckForSessionFilter(session))
+                            {
+                                continue;
+                            }
+
+                            if (CheckForIncompatibilityFilter(session))
+                            {
+                                Utils.Log($"{k_DebugPrepend}Skipping incompatible session '{session.Name}': {GetIncompatibilityReason(session)}", 1);
+                                continue;
+                            }
+
                             if (session.AvailableSlots > 0)
                             {
                                 await JoinLobby(session);
@@ -184,6 +196,17 @@ namespace XRMultiplayer
             {
                 if (sessionInfo != null)     // Check for session info
                 {
+                    if (CheckForSessionFilter(sessionInfo))
+                    {
+                        throw new InvalidOperationException("Session is filtered for this client.");
+                    }
+
+                    var incompatibilityReason = GetIncompatibilityReason(sessionInfo);
+                    if (!string.IsNullOrEmpty(incompatibilityReason))
+                    {
+                        throw new InvalidOperationException(incompatibilityReason);
+                    }
+
                     m_Status.Value = "Connecting To Room: " + sessionInfo.Name;
                     StopAllCoroutines();
                     StartCoroutine(PlayConnectionMessage());
@@ -221,6 +244,10 @@ namespace XRMultiplayer
                         failureMessage = "Lobby not found. Please try a new Lobby.";
                     else
                         failureMessage = e.Message;
+                }
+                else if (e is InvalidOperationException)
+                {
+                    failureMessage = e.Message;
                 }
                 Utils.Log($"{k_DebugPrepend}{failureMessage}\n\n{e}", 1);
                 OnSessionFailed?.Invoke($"{failureMessage}");
@@ -344,7 +371,13 @@ namespace XRMultiplayer
 
         public static QuerySessionsOptions GetQuickJoinFilterOptions()
         {
-            QuerySessionsOptions options = new QuerySessionsOptions();
+            QuerySessionsOptions options = new QuerySessionsOptions
+            {
+                FilterOptions = new List<FilterOption>
+                {
+                    new FilterOption(FilterField.AvailableSlots, "0", FilterOperation.Greater),
+                }
+            };
             return options;
         }
 
@@ -403,18 +436,118 @@ namespace XRMultiplayer
 
         public static bool CheckForSessionFilter(ISessionInfo sessionInfo)
         {
+            if (sessionInfo == null)
+            {
+                return true;
+            }
+
+            // Hide sessions flagged as editor-only from non-editor builds.
+            if (!Application.isEditor && TryGetSessionProperty(sessionInfo, k_EditorKeyIdentifier, out var hideEditorValue)
+                && bool.TryParse(hideEditorValue, out var hideEditorSession) && hideEditorSession)
+            {
+                return true;
+            }
+
             return false;
         }
 
         public static bool CheckForIncompatibilityFilter(ISessionInfo sessionInfo)
         {
+            return !string.IsNullOrEmpty(GetIncompatibilityReason(sessionInfo));
+        }
+
+        public static string GetIncompatibilityReason(ISessionInfo sessionInfo)
+        {
+            if (sessionInfo == null)
+            {
+                return "Session metadata unavailable.";
+            }
+
+            if (TryGetSessionProperty(sessionInfo, k_BuildIdKeyIdentifier, out var sessionBuildVersion)
+                && !string.IsNullOrEmpty(sessionBuildVersion)
+                && !string.Equals(sessionBuildVersion, Application.version, StringComparison.Ordinal))
+            {
+                return $"Version mismatch (host: {sessionBuildVersion}, local: {Application.version}).";
+            }
+
+            if (TryGetSessionProperty(sessionInfo, k_SceneKeyIdentifier, out var hostSceneName)
+                && !string.IsNullOrEmpty(hostSceneName)
+                && !IsSceneInBuildSettings(hostSceneName))
+            {
+                return $"Scene '{hostSceneName}' is missing from local Build Settings. Local scenes: {GetScenesInBuildSettingsDebugString()}";
+            }
+
+            return string.Empty;
+        }
+
+        static bool TryGetSessionProperty(ISessionInfo sessionInfo, string key, out string value)
+        {
+            value = string.Empty;
+
+            if (sessionInfo?.Properties == null || !sessionInfo.Properties.TryGetValue(key, out var property) || property == null)
+            {
+                return false;
+            }
+
+            value = property.Value;
+            return !string.IsNullOrEmpty(value);
+        }
+
+        static bool IsSceneInBuildSettings(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return false;
+            }
+
+            // Accept either a plain scene name or a scene path.
+            var requestedSceneRaw = sceneName.Trim();
+            var requestedSceneName = Path.GetFileNameWithoutExtension(requestedSceneRaw);
+
+            for (var i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
+            {
+                var scenePath = SceneUtility.GetScenePathByBuildIndex(i);
+                if (string.IsNullOrEmpty(scenePath))
+                {
+                    continue;
+                }
+
+                var localSceneName = Path.GetFileNameWithoutExtension(scenePath);
+                if (string.Equals(localSceneName, requestedSceneName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(scenePath, requestedSceneRaw, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
             return false;
+        }
+
+        static string GetScenesInBuildSettingsDebugString()
+        {
+            var scenes = new List<string>();
+            for (var i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
+            {
+                var scenePath = SceneUtility.GetScenePathByBuildIndex(i);
+                if (!string.IsNullOrEmpty(scenePath))
+                {
+                    scenes.Add(Path.GetFileNameWithoutExtension(scenePath));
+                }
+            }
+
+            return scenes.Count == 0 ? "<none>" : string.Join(", ", scenes);
         }
 
         public static bool CanJoinLobby(ISessionInfo session)
         {
+            if (session == null || CheckForSessionFilter(session) || CheckForIncompatibilityFilter(session))
+            {
+                return false;
+            }
+
             return (XRINetworkGameManager.Instance.sessionManager.currentSession == null) ||
-            (XRINetworkGameManager.Instance.sessionManager.currentSession != null && session.Id != XRINetworkGameManager.Instance.sessionManager.currentSession.Id);
+                   (XRINetworkGameManager.Instance.sessionManager.currentSession != null &&
+                    session.Id != XRINetworkGameManager.Instance.sessionManager.currentSession.Id);
         }
     }
 }
