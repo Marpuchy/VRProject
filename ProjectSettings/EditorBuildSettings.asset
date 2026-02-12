@@ -8,9 +8,21 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 13f6f87036926f94ab0417ca1b31725c
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/BasicScene.unity
     guid: bc761d9a86b33554f85fd11bb1f87ba3
+  - enabled: 1
+    path: Assets/Samples/XR Interaction Toolkit/3.3.0/Starter Assets/DemoScene.unity
+    guid: 319dafa5c80f29f428dc1e0d03f04177
+  - enabled: 1
+    path: Assets/Samples/XR Interaction Toolkit/3.3.0/Hands Interaction Demo/HandsDemoScene.unity
+    guid: 3ff35cecbcc52cc42945cf531638a60a
+  - enabled: 1
+    path: Assets/Samples/XR Hands/1.7.1/HandVisualizer/HandVisualizer.unity
+    guid: ab7acf0d9677fbe4db51bc36647d4fcb
+  - enabled: 1
+    path: Assets/Samples/XR Interaction Toolkit/3.3.0/Spatial Keyboard/KeyboardDemo.unity
+    guid: ad3bc6be3dfc6fe4c93410327d58b369
   m_configObjects:
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 33491290b38a6094fbf61d3c24a308a5,
       type: 2}
