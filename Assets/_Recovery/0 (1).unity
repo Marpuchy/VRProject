@@ -585,11 +585,14 @@ MonoBehaviour:
   m_FallbackCanvasDistance: 1.7
   m_FallbackCanvasScale: 0.01
   m_BuildPanelOnStart: 1
-  m_FollowPlayerInWorldSpace: 0
-  m_FollowTargetOverride: {fileID: 4607428429233221385}
-  m_UseCurrentOffsetAsFollowOffset: 1
-  m_FollowLocalPositionOffset: {x: 0, y: 0, z: 0}
-  m_FollowLocalEulerOffset: {x: 0, y: 0, z: 0}
+  m_AutoAdjustRectTransforms: 0
+  m_FollowPlayerInWorldSpace: 1
+  m_FollowTargetOverride: {fileID: 0}
+  m_FollowDistance: 1.7
+  m_FollowOffset: {x: 0, y: -0.12, z: 0}
+  m_FollowLerpSpeed: 8
+  m_FollowRotation: 1
+  m_FollowYawOnly: 1
   m_PanelRootOverride: {fileID: 196022996}
   m_SlotsRootOverride: {fileID: 0}
   m_SlotTemplate: {fileID: 0}
