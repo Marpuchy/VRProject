@@ -289,11 +289,11 @@
       "depth": 1,
       "source": "registry",
       "dependencies": {
+        "com.unity.collections": "1.2.4",
         "com.unity.services.core": "1.12.4",
-        "com.unity.modules.unitywebrequest": "1.0.0",
         "com.unity.nuget.newtonsoft-json": "3.0.2",
-        "com.unity.services.authentication": "2.0.0",
-        "com.unity.collections": "1.2.4"
+        "com.unity.modules.unitywebrequest": "1.0.0",
+        "com.unity.services.authentication": "2.0.0"
       },
       "url": "https://packages.unity.com"
     },
@@ -442,15 +442,14 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.compositionlayers": {
-      "version": "2.1.0",
-      "depth": 1,
-      "source": "registry",
+      "version": "file:com.unity.xr.compositionlayers",
+      "depth": 0,
+      "source": "embedded",
       "dependencies": {
         "com.unity.inputsystem": "1.6.3",
-        "com.unity.xr.core-utils": "2.2.2",
-        "com.unity.xr.management": "4.0.1"
-      },
-      "url": "https://packages.unity.com"
+        "com.unity.xr.management": "4.0.1",
+        "com.unity.xr.core-utils": "2.2.2"
+      }
     },
     "com.unity.xr.core-utils": {
       "version": "2.5.3",

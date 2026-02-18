@@ -1,0 +1,43 @@
+{
+  "name": "com.unity.xr.compositionlayers",
+  "displayName": "XR Composition Layers",
+  "version": "2.1.0",
+  "unity": "2022.3",
+  "unityRelease": "11f1",
+  "description": "Support for Provider based XR SDK Composition Layers.",
+  "keywords": [
+    "xr",
+    "composition",
+    "layers"
+  ],
+  "dependencies": {
+    "com.unity.inputsystem": "1.6.3",
+    "com.unity.xr.management": "4.0.1",
+    "com.unity.xr.core-utils": "2.2.2"
+  },
+  "samples": [
+    {
+      "displayName": "Sample External Android Surface Project",
+      "description": "Sample project that implements an external Android surface rendering to a composition layer using the XR_KHR_android_surface_swapchain extension. \n\nCurrently, this sample can only be seen in the editor when using Unity's Built-in Render Pipline.",
+      "path": "Samples~/ExternalSurfaceSample"
+    },
+    {
+      "displayName": "Sample Composition Layers Scene",
+      "description": "Sample showing how to use Composition Layers.",
+      "path": "Samples~/CompositionLayersSample"
+    }
+  ],
+  "_upm": {
+    "changelog": "### Added\n* Added Game view and Standalone color scale bias emulation for Default Scene Layer for the Built-in Render Pipeline and Universal Render Pipeline.\n* Added Project Validation rules for Composition Layer Transparency.\n\n### Fixed\n* Fixed `CompositionLayerManager` so that it correctly sets layers to be visible when they are enabled after previously being disabled."
+  },
+  "upmCi": {
+    "footprint": "936d5ef557ac489b6780871df2d92dc815f11504"
+  },
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.xr.compositionlayers@2.1/manual/index.html",
+  "repository": {
+    "url": "https://github.cds.internal.unity3d.com/unity/xr.sdk.compositionlayers.git",
+    "type": "git",
+    "revision": "5e1f5b1d2971712a85dd291ce438e52eb404b88c"
+  },
+  "_fingerprint": "5e1c832d301cda8acd7de7a4d03507f0f7a67227"
+}

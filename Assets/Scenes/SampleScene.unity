@@ -4099,6 +4099,35 @@ MonoBehaviour:
   _axis: {x: 0, y: 0, z: 1}
   _keepWorldScale: 1
   _useTriggerCollider: 1
+--- !u!1 &754926258 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5736792165537604226, guid: f0f4f47773118b12eaf525d698e14756,
+    type: 3}
+  m_PrefabInstance: {fileID: 4703092092126537014}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &754926259 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1256411121751818399, guid: f0f4f47773118b12eaf525d698e14756,
+    type: 3}
+  m_PrefabInstance: {fileID: 4703092092126537014}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &754926260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 754926258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d209c8eb9a6199e718cd9a6af4aaeac6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ScaleHandle
+  _targetCube: {fileID: 904128084}
+  _grid: {fileID: 1114009702}
+  _axis: {x: 1, y: 0, z: 0}
+  _keepWorldScale: 1
+  _useTriggerCollider: 1
 --- !u!1 &1477891650
 GameObject:
   m_ObjectHideFlags: 0
