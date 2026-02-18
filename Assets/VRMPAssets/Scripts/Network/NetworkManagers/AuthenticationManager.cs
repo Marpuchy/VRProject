@@ -10,11 +10,9 @@ using UnityEngine.XR.Interaction.Toolkit.UI;
 #endif
 
 #if UNITY_EDITOR
-
 #if HAS_PARRELSYNC
 using ParrelSync;
 #endif
-
 #endif
 
 namespace XRMultiplayer
@@ -22,27 +20,27 @@ namespace XRMultiplayer
     public class AuthenticationManager : MonoBehaviour
     {
         const string k_DebugPrepend = "<color=#938FFF>[Authentication Manager]</color> ";
+        const int k_MaxProfileLength = 30;
+        const string k_InvalidProfileCharacters = @"[^\w-]";
+        const string k_ProfileArg = "-ugsProfile";
+        const string k_LegacyPlayerArgId = "PlayerArg";
+        const string k_DefaultEditorProfile = "EditorMain";
+        const string k_DefaultBuildProfilePrefix = "Build";
+        static readonly string s_RuntimeInstanceTag = Guid.NewGuid().ToString("N").Substring(0, 8);
 
-        /// <summary>
-        /// The argument ID to search for in the command line args.
-        /// </summary>
-        const string k_playerArgID = "PlayerArg";
-
-        /// <summary>
-        /// Determines if the AuthenticationManager should use command line args to determine the player ID when launching a build.
-        /// </summary>
+        [Header("Authentication Profile")]
         [SerializeField] bool m_UseCommandLineArgs = true;
+        [SerializeField] string m_ProfileOverride = "";
+        [SerializeField] bool m_ClearCredentialsWhenSwitchingProfile = false;
+        [SerializeField] bool m_LogResolvedProfile = true;
 
 #if HAS_MPPM
-
         const string k_MppmEditorName = "-name";
         const string k_MppmCloneProcess = "--virtual-project-clone";
+        const string k_MppmVirtualProjectIdArg = "-vpId";
 
         bool m_IsVirtualPlayer;
 
-        /// <summary>
-        /// The XRUIInputModule that is used to control the XRUI -- Cache this value and it with the MPPM virtual players.
-        /// </summary>
         public XRUIInputModule inputModule
         {
             get
@@ -51,6 +49,7 @@ namespace XRMultiplayer
                 {
                     m_InputModule = FindAnyObjectByType<XRUIInputModule>();
                 }
+
                 return m_InputModule;
             }
         }
@@ -59,60 +58,51 @@ namespace XRMultiplayer
 #endif
 
         /// <summary>
-        /// Simple Authentication function. This uses bare bones authentication and anonymous sign in.
+        /// Initializes UGS and signs in anonymously with an isolated local profile.
         /// </summary>
-        /// <returns></returns>
+        /// <remarks>
+        /// Each local process must use a different profile to avoid cached-session collisions
+        /// when running host + client on the same machine.
+        /// </remarks>
         public virtual async Task<bool> Authenticate()
         {
             try
             {
-                // Check if UGS has not been initialized yet, and initialize.
-                if (UnityServices.State == ServicesInitializationState.Uninitialized)
+                var targetProfile = ResolveTargetProfile();
+                if (string.IsNullOrEmpty(targetProfile))
                 {
-                    var options = new InitializationOptions();
-                    string playerId = "Player";
-                    // Check for editor clones (MPPM or ParrelSync).
-                    // This allows for multiple instances of the editor to connect to UGS.
-#if UNITY_EDITOR
-                    playerId = "Editor";
-
-#if HAS_MPPM
-                    //Check for MPPM
-                    playerId += CheckMPPM();
-#elif HAS_PARRELSYNC
-                    // Check for ParrelSync
-                    playerId += CheckParrelSync();
-#endif
-#endif
-                    // Check for command line args in builds
-                    if (!Application.isEditor && m_UseCommandLineArgs)
-                    {
-                        playerId += GetPlayerIDArg();
-                    }
-
-                    playerId = SanitizeString(playerId);
-
-                    Utils.Log($"{k_DebugPrepend}Signing in with profile {playerId}");
-                    options.SetProfile(playerId);
-
-                    // Initialize UGS using any options defined
-                    await UnityServices.InitializeAsync(options);
+                    Utils.LogError($"{k_DebugPrepend}Unable to resolve a valid Authentication profile.");
+                    return false;
                 }
 
-                // If not already signed on then do so.
-                if (!AuthenticationService.Instance.IsAuthorized)
+                if (m_LogResolvedProfile)
                 {
-                    // Signing in anonymously for simplicity sake.
-                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                    Utils.Log($"{k_DebugPrepend}Target Authentication profile: {targetProfile}");
                 }
 
-                // Cache PlayerId.
+                await EnsureServicesInitializedAsync(targetProfile);
+                await EnsureProfileAndSignInAsync(targetProfile);
+
                 XRINetworkGameManager.AuthenicationId = AuthenticationService.Instance.PlayerId;
-                return UnityServices.State == ServicesInitializationState.Initialized;
+                Utils.Log($"{k_DebugPrepend}Authenticated PlayerId={XRINetworkGameManager.AuthenicationId} Profile={AuthenticationService.Instance.Profile}");
+
+                // Lobby/Relay join must start after this method returns true.
+                // Example: XRINetworkGameManager.Awake -> await Authenticate() -> QuickJoin/Create lobby.
+                return UnityServices.State == ServicesInitializationState.Initialized && AuthenticationService.Instance.IsSignedIn;
             }
-            catch (System.Exception e)
+            catch (AuthenticationException e)
             {
-                Utils.Log($"{k_DebugPrepend}Error during authentication: {e}");
+                Utils.LogError($"{k_DebugPrepend}AuthenticationException: {e.ErrorCode} - {e.Message}");
+                return false;
+            }
+            catch (RequestFailedException e)
+            {
+                Utils.LogError($"{k_DebugPrepend}RequestFailedException: {e.ErrorCode} - {e.Message}");
+                return false;
+            }
+            catch (Exception e)
+            {
+                Utils.LogError($"{k_DebugPrepend}Error during authentication: {e}");
                 return false;
             }
         }
@@ -125,42 +115,155 @@ namespace XRMultiplayer
             }
             catch (Exception e)
             {
-                Utils.Log($"{k_DebugPrepend}Checking for AuthenticationService.Instance before initialized.{e}");
+                Utils.Log($"{k_DebugPrepend}Checking Authentication before initialization: {e}");
                 return false;
             }
         }
 
-        static string GetPlayerIDArg()
+        async Task EnsureServicesInitializedAsync(string profile)
         {
-            string playerID = "";
-            string[] args = Environment.GetCommandLineArgs();
-            foreach (string arg in args)
+            while (UnityServices.State == ServicesInitializationState.Initializing)
             {
-                if (arg.ToLower().Contains(k_playerArgID.ToLower()))
+                await Task.Yield();
+            }
+
+            if (UnityServices.State == ServicesInitializationState.Uninitialized)
+            {
+                var options = new InitializationOptions().SetProfile(profile);
+                await UnityServices.InitializeAsync(options);
+            }
+            else if (UnityServices.State != ServicesInitializationState.Initialized)
+            {
+                throw new InvalidOperationException($"Unexpected UnityServices state: {UnityServices.State}");
+            }
+        }
+
+        async Task EnsureProfileAndSignInAsync(string targetProfile)
+        {
+            var auth = AuthenticationService.Instance;
+            if (auth == null)
+            {
+                throw new InvalidOperationException("AuthenticationService.Instance is null after UnityServices initialization.");
+            }
+
+            if (!string.Equals(auth.Profile, targetProfile, StringComparison.Ordinal))
+            {
+                SwitchProfileSafely(targetProfile);
+            }
+
+            if (!auth.IsSignedIn)
+            {
+                await auth.SignInAnonymouslyAsync();
+            }
+        }
+
+        void SwitchProfileSafely(string profile)
+        {
+            var auth = AuthenticationService.Instance;
+            if (auth == null)
+            {
+                throw new InvalidOperationException("AuthenticationService.Instance is null.");
+            }
+
+            // SwitchProfile only succeeds when signed out.
+            if (auth.IsSignedIn)
+            {
+                auth.SignOut(m_ClearCredentialsWhenSwitchingProfile);
+            }
+
+            try
+            {
+                auth.SwitchProfile(profile);
+            }
+            catch (AuthenticationException e) when (e.ErrorCode == AuthenticationErrorCodes.ClientInvalidUserState)
+            {
+                // Retry once after forcing signed-out state, in case another system changed auth state.
+                auth.SignOut(m_ClearCredentialsWhenSwitchingProfile);
+                auth.SwitchProfile(profile);
+            }
+        }
+
+        string ResolveTargetProfile()
+        {
+            if (!string.IsNullOrWhiteSpace(m_ProfileOverride))
+            {
+                return SanitizeProfile(m_ProfileOverride);
+            }
+
+            if (m_UseCommandLineArgs)
+            {
+                var cliProfile = GetProfileFromCommandLine();
+                if (!string.IsNullOrEmpty(cliProfile))
+                {
+                    return SanitizeProfile(cliProfile);
+                }
+            }
+
+#if UNITY_EDITOR
+#if HAS_MPPM
+            var mppmProfile = CheckMPPM();
+            if (!string.IsNullOrEmpty(mppmProfile))
+            {
+                return SanitizeProfile($"MPPM_{mppmProfile}");
+            }
+#elif HAS_PARRELSYNC
+            var parrelProfile = CheckParrelSync();
+            if (!string.IsNullOrEmpty(parrelProfile))
+            {
+                return SanitizeProfile($"Parrel_{parrelProfile}");
+            }
+#endif
+            return SanitizeProfile(k_DefaultEditorProfile);
+#else
+            // Build fallback: a per-process runtime tag keeps simultaneous local instances on separate profiles.
+            return SanitizeProfile($"{k_DefaultBuildProfilePrefix}_{s_RuntimeInstanceTag}");
+#endif
+        }
+
+        static string GetProfileFromCommandLine()
+        {
+            var args = Environment.GetCommandLineArgs();
+            for (var i = 0; i < args.Length; i++)
+            {
+                var arg = args[i];
+
+                if (arg.Equals(k_ProfileArg, StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    return args[i + 1];
+                }
+
+                if (arg.StartsWith($"{k_ProfileArg}=", StringComparison.OrdinalIgnoreCase))
+                {
+                    return arg.Substring(k_ProfileArg.Length + 1);
+                }
+
+                if (arg.IndexOf(k_LegacyPlayerArgId, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     var splitArgs = arg.Split(':');
-                    if (splitArgs.Length > 0)
+                    if (splitArgs.Length > 1)
                     {
-                        playerID += splitArgs[1];
+                        return splitArgs[1];
                     }
                 }
             }
-            return playerID;
+
+            return string.Empty;
         }
 
-        static string SanitizeString(string playerId)
+        static string SanitizeProfile(string rawProfile)
         {
-            if (string.IsNullOrEmpty(playerId))
+            if (string.IsNullOrWhiteSpace(rawProfile))
             {
-                return string.Empty;
+                return "Player";
             }
 
-            // Define the regular expression pattern to match characters that are NOT alphanumeric, dash, or underscore.
-            // \w matches [a-zA-Z0-9_] (alphanumeric and underscore)
-            // \- matches the literal hyphen
-            // The caret ^ inside the character set [] negates the set, matching anything NOT in the set.
-            string pattern = @"[^\w-]";
-            return Regex.Replace(playerId, pattern, "");
+            var sanitized = Regex.Replace(rawProfile.Trim(), k_InvalidProfileCharacters, "");
+            if (sanitized.Length > k_MaxProfileLength)
+            {
+                sanitized = sanitized.Substring(0, k_MaxProfileLength);
+            }
+
+            return string.IsNullOrEmpty(sanitized) ? "Player" : sanitized;
         }
 
 #if UNITY_EDITOR
@@ -168,7 +271,8 @@ namespace XRMultiplayer
         string CheckMPPM()
         {
             Utils.Log($"{k_DebugPrepend}MPPM Found");
-            string mppmString = "";
+            var mppmName = "";
+            var mppmVirtualProjectId = "";
 
             var arguments = Environment.GetCommandLineArgs();
             for (int i = 0; i < arguments.Length; ++i)
@@ -176,31 +280,65 @@ namespace XRMultiplayer
                 if (arguments[i] == k_MppmCloneProcess)
                 {
                     m_IsVirtualPlayer = true;
-                    inputModule.enableMouseInput = false;
-                    inputModule.enableTouchInput = false;
+                    var module = inputModule;
+                    if (module != null)
+                    {
+                        module.enableMouseInput = false;
+                        module.enableTouchInput = false;
+                    }
                 }
+
                 if (arguments[i] == k_MppmEditorName && (i + 1) < arguments.Length)
                 {
-                    mppmString += arguments[i + 1];
+                    mppmName = arguments[i + 1];
+                }
+
+                if (arguments[i].StartsWith($"{k_MppmVirtualProjectIdArg}=", StringComparison.OrdinalIgnoreCase))
+                {
+                    mppmVirtualProjectId = ReadNameValueArgument(arguments[i]);
                 }
             }
 
-            if (m_IsVirtualPlayer && string.IsNullOrEmpty(mppmString))
+            if (!string.IsNullOrEmpty(mppmVirtualProjectId))
             {
-                Utils.LogWarning("An MPPM virtual player was detected, but the Player Name was not set. This may cause authentication failures when trying to connect.");
+                return mppmVirtualProjectId;
             }
 
-            return mppmString;
+            if (!string.IsNullOrEmpty(mppmName))
+            {
+                return mppmName;
+            }
+
+            if (m_IsVirtualPlayer)
+            {
+                Utils.LogWarning("MPPM virtual player detected without clone name. Falling back to runtime-instance profile.");
+                return s_RuntimeInstanceTag;
+            }
+
+            return string.Empty;
         }
 
-        // This prevents the XRUIInputModule from throwing errors when MPPM is active but focus on the editor has not happened yet.
+        static string ReadNameValueArgument(string arg)
+        {
+            var separatorIndex = arg.IndexOf('=');
+            if (separatorIndex < 0 || separatorIndex + 1 >= arg.Length)
+            {
+                return string.Empty;
+            }
+
+            return arg.Substring(separatorIndex + 1);
+        }
+
         void OnApplicationFocus(bool focus)
         {
-            // Check to make sure it's an MPPM Virtual Player.
             if (focus && m_IsVirtualPlayer)
             {
-                inputModule.enableMouseInput = true;
-                inputModule.enableTouchInput = true;
+                var module = inputModule;
+                if (module != null)
+                {
+                    module.enableMouseInput = true;
+                    module.enableTouchInput = true;
+                }
             }
         }
 #endif
@@ -209,11 +347,10 @@ namespace XRMultiplayer
         string CheckParrelSync()
         {
             Utils.Log($"{k_DebugPrepend}ParrelSync Found");
-            string pSyncString = "";
-            if (ClonesManager.IsClone()) pSyncString += ClonesManager.GetArgument();
-            return pSyncString;
+            return ClonesManager.IsClone() ? ClonesManager.GetArgument() : string.Empty;
         }
 #endif
 #endif
     }
 }
+

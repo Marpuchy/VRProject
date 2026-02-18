@@ -319,7 +319,8 @@ namespace XRMultiplayer
                     if (SessionManager.CheckForIncompatibilityFilter(session))
                     {
                         LobbyListSlotUI newLobbyUI = Instantiate(m_LobbyListPrefab, m_LobbyListParent).GetComponent<LobbyListSlotUI>();
-                        newLobbyUI.CreateNonJoinableLobbyUI(session, this, "Version Conflict");
+                        var reason = SessionManager.GetIncompatibilityReason(session);
+                        newLobbyUI.CreateNonJoinableLobbyUI(session, this, string.IsNullOrEmpty(reason) ? "Incompatible" : reason);
                         continue;
                     }
 

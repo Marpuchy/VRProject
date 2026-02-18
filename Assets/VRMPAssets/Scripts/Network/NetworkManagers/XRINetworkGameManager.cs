@@ -261,6 +261,8 @@ namespace XRMultiplayer
             }
 
             m_ConnectionState.Value = ConnectionState.Authenticated;
+            // Authentication is complete at this point.
+            // Start Lobby/Relay flow from user actions (QuickJoinLobby, JoinLobbyByCode, CreateNewLobby) after this state.
         }
 
         /// <summary>

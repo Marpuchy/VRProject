@@ -115,8 +115,18 @@
         "com.unity.modules.uielements": "1.0.0"
       }
     },
+    "com.unity.multiplayer.center.quickstart": {
+      "version": "1.1.1",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.uielements": "1.0.0",
+        "com.unity.multiplayer.center": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.multiplayer.playmode": {
-      "version": "1.6.2",
+      "version": "1.6.3",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -125,7 +135,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.multiplayer.tools": {
-      "version": "2.2.6",
+      "version": "2.2.8",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -139,8 +149,17 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.multiplayer.widgets": {
+      "version": "1.0.5",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.services.multiplayer": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.netcode.gameobjects": {
-      "version": "2.7.0",
+      "version": "2.9.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -228,8 +247,8 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.services.authentication": {
-      "version": "3.5.2",
-      "depth": 0,
+      "version": "3.6.0",
+      "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.ugui": "1.0.0",
@@ -268,7 +287,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.services.multiplayer": {
-      "version": "1.2.0",
+      "version": "2.1.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -280,7 +299,7 @@
         "com.unity.services.deployment": "1.6.2",
         "com.unity.nuget.newtonsoft-json": "3.2.1",
         "com.unity.modules.unitywebrequest": "1.0.0",
-        "com.unity.services.authentication": "3.5.1"
+        "com.unity.services.authentication": "3.6.0"
       },
       "url": "https://packages.unity.com"
     },
@@ -298,7 +317,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.services.vivox": {
-      "version": "16.7.0",
+      "version": "16.9.0",
       "depth": 0,
       "source": "registry",
       "dependencies": {
