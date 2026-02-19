@@ -23,6 +23,8 @@ public sealed class ScaleHandle : MonoBehaviour
     private void Awake()
     {
         _interactable = GetComponent<XRSimpleInteractable>();
+        _initialLocalScale = transform.localScale;
+        _initialParentScale = transform.parent ? transform.parent.lossyScale : Vector3.one;
 
         _interactable.selectEntered.AddListener(OnGrab);
         _interactable.selectExited.AddListener(OnRelease);
