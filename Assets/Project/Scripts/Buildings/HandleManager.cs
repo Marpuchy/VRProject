@@ -11,7 +11,7 @@ public class HandleManager : MonoBehaviour
 
     private void Awake()
     {
-        _cube = transform; // Este script va en el cubo
+        _cube = transform; 
     }
 
     private void LateUpdate()
