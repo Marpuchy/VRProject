@@ -6104,42 +6104,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.BuildingPrefabSpawnController
   m_BuildingPanelUI: {fileID: 2097244084}
-  m_DefaultSpawnPoint: {fileID: 1114009706}
-  m_DefaultSpawnParent: {fileID: 233106693}
-  m_SpawnOnSelection: 1
+  m_DefaultSpawnPoint: {fileID: 0}
+  m_DefaultSpawnParent: {fileID: 0}
+  m_SpawnOnSelection: 0
   m_UseSpawnPointRotation: 1
   m_UseSpawnPointScale: 0
-  m_UsePreviewPlacement: 1
-  m_PreviewFollowOrigin: {fileID: 0}
-  m_PreviewRaycastMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_PreviewRayDistance: 100
-  m_PreviewLift: 0.01
-  m_HidePreviewWhenNoHit: 1
-  m_DisableScriptsOnPreview: 1
-  m_PreviewTint: {r: 0.25, g: 0.75, b: 1, a: 0.45}
-  m_UseDebugKeyboardShortcuts: 1
-  m_AllowMouseClickToConfirm: 1
-  m_ConfirmKey: 282
-  m_CancelKey: 283
-  m_RotateLeftKey: 113
-  m_RotateRightKey: 101
-  m_RotationStepDegrees: 90
-  m_UseXRControllerButtons: 1
-  m_ControllerNodeForPlacement: 6
-  m_TriggerPressThreshold: 0.75
-  m_StickRotateDeadzone: 0.75
-  m_SetupGridPlacementOnSpawn: 1
-  m_GridDefinition: {fileID: 1114009702}
-  m_AddRigidbodyIfMissing: 1
-  m_AddGrabInteractableIfMissing: 1
-  m_AddGridMovementConstraintIfMissing: 1
-  m_AddHorizontalGrabConstraintIfMissing: 1
-  m_ConfigurePhysicsLikeTestCube: 1
-  m_ConfigureGrabLikeTestCube: 1
-  m_EnableGravityOnSpawn: 1
-  m_SpawnedBodyMass: 1
   m_OnSelectedPrefabChanged:
     m_PersistentCalls:
       m_Calls: []

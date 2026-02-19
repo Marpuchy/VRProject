@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 560696754909007121}
   - component: {fileID: 5505794212391758796}
   m_Layer: 0
-  m_Name: PrefabTest
+  m_Name: Square
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
