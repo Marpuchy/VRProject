@@ -39,6 +39,10 @@ namespace CityBuilderVR
 
         [Header("Buildings")]
         [SerializeField] List<BuildingSlotData> m_BuildingSlots = new List<BuildingSlotData>();
+        [SerializeField] bool m_UseQuickPrefabList = true;
+        [SerializeField] bool m_AutoSyncSlotsFromQuickList = true;
+        [SerializeField] bool m_OverwriteSlotNamesFromQuickList = true;
+        [SerializeField] List<GameObject> m_QuickPrefabList = new List<GameObject>();
         [SerializeField, Min(1)] int m_EmptySlotCount = 6;
         [SerializeField] bool m_DisableButtonsWithoutPrefab = true;
 
@@ -149,6 +153,48 @@ namespace CityBuilderVR
             m_ThemeVariant = ThemeVariant.AppleDark;
             ApplyThemePreset();
             BuildPanel();
+        }
+
+        [ContextMenu("Buildings/Sync Slots From Quick Prefab List")]
+        public void SyncSlotsFromQuickPrefabList()
+        {
+            if (m_QuickPrefabList == null)
+            {
+                m_QuickPrefabList = new List<GameObject>();
+            }
+
+            if (m_BuildingSlots == null)
+            {
+                m_BuildingSlots = new List<BuildingSlotData>();
+            }
+
+            int requiredCount = m_QuickPrefabList.Count;
+
+            while (m_BuildingSlots.Count < requiredCount)
+            {
+                m_BuildingSlots.Add(new BuildingSlotData());
+            }
+
+            while (m_BuildingSlots.Count > requiredCount)
+            {
+                m_BuildingSlots.RemoveAt(m_BuildingSlots.Count - 1);
+            }
+
+            for (int i = 0; i < requiredCount; i++)
+            {
+                BuildingSlotData slot = m_BuildingSlots[i];
+                slot.buildingPrefab = m_QuickPrefabList[i];
+
+                if (slot.buildingPrefab != null &&
+                    (m_OverwriteSlotNamesFromQuickList || string.IsNullOrWhiteSpace(slot.slotName)))
+                {
+                    slot.slotName = slot.buildingPrefab.name;
+                }
+
+                m_BuildingSlots[i] = slot;
+            }
+
+            RefreshSelectedPrefab();
         }
 
         public void RebuildSlots()
@@ -1142,6 +1188,11 @@ namespace CityBuilderVR
 #if UNITY_EDITOR
         void OnValidate()
         {
+            if (m_UseQuickPrefabList && m_AutoSyncSlotsFromQuickList)
+            {
+                SyncSlotsFromQuickPrefabList();
+            }
+
             for (int i = 0; i < m_BuildingSlots.Count; i++)
             {
                 BuildingSlotData slot = m_BuildingSlots[i];
