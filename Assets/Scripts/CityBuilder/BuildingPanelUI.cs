@@ -25,6 +25,11 @@ namespace CityBuilderVR
         {
         }
 
+        [Serializable]
+        public class BuildingPrefabSelectedEvent : UnityEvent<GameObject>
+        {
+        }
+
         public enum ThemeVariant
         {
             Custom = 0,
@@ -80,6 +85,7 @@ namespace CityBuilderVR
 
         [Header("Events")]
         [SerializeField] BuildingSlotSelectedEvent m_OnSlotSelected = new BuildingSlotSelectedEvent();
+        [SerializeField] BuildingPrefabSelectedEvent m_OnPrefabSelected = new BuildingPrefabSelectedEvent();
 
         RectTransform m_PanelTransform;
         RectTransform m_SlotsRoot;
@@ -89,6 +95,8 @@ namespace CityBuilderVR
         Sprite m_PanelRoundedSprite;
         Sprite m_SlotRoundedSprite;
         Sprite m_IconRoundedSprite;
+        int m_SelectedSlotIndex = -1;
+        GameObject m_SelectedPrefab;
         bool m_FollowOffsetInitialized;
         Transform m_LastFollowTarget;
         Vector3 m_RuntimeFollowLocalPositionOffset;
@@ -96,6 +104,12 @@ namespace CityBuilderVR
 #if UNITY_EDITOR
         readonly Dictionary<int, Sprite> m_EditorPrefabIconCache = new Dictionary<int, Sprite>();
 #endif
+
+        public int SelectedSlotIndex => m_SelectedSlotIndex;
+        public GameObject SelectedPrefab => m_SelectedPrefab;
+        public bool HasSelectedPrefab => m_SelectedPrefab != null;
+        public BuildingSlotSelectedEvent OnSlotSelected => m_OnSlotSelected;
+        public BuildingPrefabSelectedEvent OnPrefabSelected => m_OnPrefabSelected;
 
         void Start()
         {
@@ -167,6 +181,7 @@ namespace CityBuilderVR
             }
 
             RefreshScrollState();
+            RefreshSelectedPrefab();
         }
 
         Transform ResolveFollowTarget()
@@ -280,7 +295,44 @@ namespace CityBuilderVR
                 return;
             }
 
-            m_OnSlotSelected.Invoke(slotIndex, m_BuildingSlots[slotIndex].buildingPrefab);
+            m_SelectedSlotIndex = slotIndex;
+            m_SelectedPrefab = m_BuildingSlots[slotIndex].buildingPrefab;
+            m_OnPrefabSelected.Invoke(m_SelectedPrefab);
+            m_OnSlotSelected.Invoke(slotIndex, m_SelectedPrefab);
+        }
+
+        public bool TryGetSelectedPrefab(out GameObject prefab)
+        {
+            prefab = m_SelectedPrefab;
+            return prefab != null;
+        }
+
+        public GameObject GetSlotPrefab(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= m_BuildingSlots.Count)
+            {
+                return null;
+            }
+
+            return m_BuildingSlots[slotIndex].buildingPrefab;
+        }
+
+        public void ClearSelection()
+        {
+            m_SelectedSlotIndex = -1;
+            m_SelectedPrefab = null;
+        }
+
+        void RefreshSelectedPrefab()
+        {
+            if (m_SelectedSlotIndex < 0 || m_SelectedSlotIndex >= m_BuildingSlots.Count)
+            {
+                m_SelectedSlotIndex = -1;
+                m_SelectedPrefab = null;
+                return;
+            }
+
+            m_SelectedPrefab = m_BuildingSlots[m_SelectedSlotIndex].buildingPrefab;
         }
 
         void EnsureCanvas()
@@ -1113,6 +1165,7 @@ namespace CityBuilderVR
             m_SlotBorderThickness = Mathf.Max(0.5f, m_SlotBorderThickness);
             ApplyThemePreset();
             ApplySlotLayoutSettings();
+            RefreshSelectedPrefab();
             m_FollowOffsetInitialized = false;
             m_LastFollowTarget = null;
             m_PanelRoundedSprite = null;

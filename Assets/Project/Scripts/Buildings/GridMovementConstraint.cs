@@ -15,10 +15,18 @@ public sealed class GridMovementConstraint : MonoBehaviour
 
     private Vector2Int _currentCell;
 
+    public void SetGrid(GridDefinition grid)
+    {
+        _grid = grid;
+    }
+
     private void Awake()
     {
         _rigidbody = GetComponent<Rigidbody>();
         _grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
+
+        if (_grid == null)
+            _grid = FindFirstObjectByType<GridDefinition>();
 
         _grabInteractable.selectEntered.AddListener(OnGrab);
         _grabInteractable.selectExited.AddListener(OnRelease);
@@ -28,8 +36,11 @@ public sealed class GridMovementConstraint : MonoBehaviour
 
     private void OnDestroy()
     {
-        _grabInteractable.selectEntered.RemoveListener(OnGrab);
-        _grabInteractable.selectExited.RemoveListener(OnRelease);
+        if (_grabInteractable != null)
+        {
+            _grabInteractable.selectEntered.RemoveListener(OnGrab);
+            _grabInteractable.selectExited.RemoveListener(OnRelease);
+        }
     }
 
     private void OnGrab(SelectEnterEventArgs args)
@@ -80,6 +91,9 @@ public sealed class GridMovementConstraint : MonoBehaviour
 
     private void SnapImmediately()
     {
+        if (_grid == null)
+            return;
+
         Vector3 snapped = _grid.Snap(_rigidbody.position);
         snapped.y = _fixedY;
 
@@ -88,6 +102,9 @@ public sealed class GridMovementConstraint : MonoBehaviour
 
     private Vector2Int GetCell(Vector3 worldPosition)
     {
+        if (_grid == null)
+            return Vector2Int.zero;
+
         float size = _grid.CellSize;
         Vector3 origin = _grid.Origin;
 
