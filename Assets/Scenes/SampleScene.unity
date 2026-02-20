@@ -517,67 +517,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4f6ed3f0a5b4e34ba9a8a2bf8fd2f7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_BuildingSlots:
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: PrefabTest
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
-      type: 3}
-    icon: {fileID: 0}
+  m_BuildingSlots: []
+  m_UseQuickPrefabList: 1
+  m_AutoSyncSlotsFromQuickList: 1
+  m_OverwriteSlotNamesFromQuickList: 1
+  m_QuickPrefabList: []
   m_EmptySlotCount: 6
   m_DisableButtonsWithoutPrefab: 1
   m_TargetCanvas: {fileID: 525470203}
@@ -5755,18 +5699,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BuildingSlots:
-  - slotName: Square
-    buildingPrefab: {fileID: 8526415623101857602, guid: 0d64cc849fd9a5dc589c45ff80693d70,
+  - slotName: PerfectCube
+    buildingPrefab: {fileID: 2853952606427955886, guid: f0f4f47773118b12eaf525d698e14756,
       type: 3}
     icon: {fileID: 0}
-  - slotName: Sphere
-    buildingPrefab: {fileID: 1671396416728727402, guid: bcc9ee95186deea98918975e56563761,
-      type: 3}
-    icon: {fileID: 0}
-  - slotName: Cylinder
-    buildingPrefab: {fileID: 6955374650456338782, guid: 81de0c9bb06ad2f3bbcbef93ad3855d0,
-      type: 3}
-    icon: {fileID: 0}
+  m_UseQuickPrefabList: 1
+  m_AutoSyncSlotsFromQuickList: 1
+  m_OverwriteSlotNamesFromQuickList: 1
+  m_QuickPrefabList:
+  - {fileID: 2853952606427955886, guid: f0f4f47773118b12eaf525d698e14756, type: 3}
   m_EmptySlotCount: 6
   m_DisableButtonsWithoutPrefab: 1
   m_TargetCanvas: {fileID: 1003942432}
@@ -5859,10 +5800,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.BuildingPrefabSpawnController
   m_BuildingPanelUI: {fileID: 2097244084}
-  m_DefaultSpawnPoint: {fileID: 1114009706}
+  m_DefaultSpawnPoint: {fileID: 0}
   m_DefaultSpawnParent: {fileID: 233106693}
   m_SpawnOnSelection: 1
   m_UseSpawnPointRotation: 1
+  m_ForceIdentityRotation: 1
   m_UseSpawnPointScale: 0
   m_UsePreviewPlacement: 1
   m_PreviewFollowOrigin: {fileID: 0}
@@ -11813,7 +11755,7 @@ PrefabInstance:
     - target: {fileID: 6171970600952445591, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
       propertyPath: m_InteractionLayers.m_Bits
-      value: 2147483650
+      value: 4294967295
       objectReference: {fileID: 0}
     - target: {fileID: 6171970600952445591, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
@@ -12173,7 +12115,7 @@ PrefabInstance:
     - target: {fileID: 8383550645921242766, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
       propertyPath: m_InteractionLayers.m_Bits
-      value: 2147483650
+      value: 4294967295
       objectReference: {fileID: 0}
     - target: {fileID: 8383550645921242766, guid: 77ac6b10722bcca4a8baf70e44d89e78,
         type: 3}
@@ -12282,11 +12224,21 @@ PrefabInstance:
       propertyPath: _grid
       value: 
       objectReference: {fileID: 1114009702}
+    - target: {fileID: 1561257744138792889, guid: f0f4f47773118b12eaf525d698e14756,
+        type: 3}
+      propertyPath: m_InteractionLayers.m_Bits
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 1652947271564953618, guid: f0f4f47773118b12eaf525d698e14756,
         type: 3}
       propertyPath: _grid
       value: 
       objectReference: {fileID: 1114009702}
+    - target: {fileID: 1867655206568548739, guid: f0f4f47773118b12eaf525d698e14756,
+        type: 3}
+      propertyPath: m_InteractionLayers.m_Bits
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2853952606427955886, guid: f0f4f47773118b12eaf525d698e14756,
         type: 3}
       propertyPath: m_Name
@@ -12342,11 +12294,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6159106902422025129, guid: f0f4f47773118b12eaf525d698e14756,
+        type: 3}
+      propertyPath: m_InteractionLayers.m_Bits
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 8358848668722539830, guid: f0f4f47773118b12eaf525d698e14756,
         type: 3}
       propertyPath: _grid
       value: 
       objectReference: {fileID: 1114009702}
+    - target: {fileID: 9131967819437860892, guid: f0f4f47773118b12eaf525d698e14756,
+        type: 3}
+      propertyPath: m_InteractionLayers.m_Bits
+      value: 4
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

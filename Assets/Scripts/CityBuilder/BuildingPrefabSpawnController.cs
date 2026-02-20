@@ -34,6 +34,7 @@ namespace CityBuilderVR
         [SerializeField] Transform m_DefaultSpawnParent;
         [SerializeField] bool m_SpawnOnSelection = true;
         [SerializeField] bool m_UseSpawnPointRotation = true;
+        [SerializeField] bool m_ForceIdentityRotation = true;
         [SerializeField] bool m_UseSpawnPointScale;
 
         [Header("Placement Mode")]
@@ -290,6 +291,11 @@ namespace CityBuilderVR
 
         public void RotatePreview(float deltaYawDegrees)
         {
+            if (m_ForceIdentityRotation)
+            {
+                return;
+            }
+
             if (m_PreviewInstance == null)
             {
                 return;
@@ -414,6 +420,10 @@ namespace CityBuilderVR
             placementPoint.y += m_PreviewHalfHeight + m_PreviewLift;
 
             Quaternion rotation = Quaternion.Euler(0f, m_CurrentPreviewYaw, 0f);
+            if (m_ForceIdentityRotation)
+            {
+                rotation = Quaternion.identity;
+            }
             m_PreviewInstance.transform.SetPositionAndRotation(placementPoint, rotation);
 
             m_LastPreviewWorldPosition = placementPoint;
@@ -717,35 +727,66 @@ namespace CityBuilderVR
             }
 
             Rigidbody body = instance.GetComponent<Rigidbody>();
+            bool addedBody = false;
             if (body == null && m_AddRigidbodyIfMissing)
             {
                 body = instance.AddComponent<Rigidbody>();
+                addedBody = true;
             }
 
             if (body != null)
             {
-                body.mass = Mathf.Max(0.01f, m_SpawnedBodyMass);
-                body.useGravity = m_EnableGravityOnSpawn;
-                body.isKinematic = false;
-
-                if (m_ConfigurePhysicsLikeTestCube)
+                if (addedBody)
                 {
-                    body.interpolation = RigidbodyInterpolation.Interpolate;
-                    body.collisionDetectionMode = CollisionDetectionMode.Continuous;
-                    body.constraints =
-                        RigidbodyConstraints.FreezePositionY |
-                        RigidbodyConstraints.FreezeRotationX |
-                        RigidbodyConstraints.FreezeRotationZ;
+                    body.mass = Mathf.Max(0.01f, m_SpawnedBodyMass);
+                    body.useGravity = m_EnableGravityOnSpawn;
+                    body.isKinematic = false;
+
+                    if (m_ConfigurePhysicsLikeTestCube)
+                    {
+                        body.interpolation = RigidbodyInterpolation.Interpolate;
+                        body.collisionDetectionMode = CollisionDetectionMode.Continuous;
+                        body.constraints =
+                            RigidbodyConstraints.FreezePositionY |
+                            RigidbodyConstraints.FreezeRotationX |
+                            RigidbodyConstraints.FreezeRotationZ;
+                    }
                 }
             }
 
             XRGrabInteractable grab = instance.GetComponent<XRGrabInteractable>();
+            bool addedGrab = false;
             if (grab == null && m_AddGrabInteractableIfMissing)
             {
                 grab = instance.AddComponent<XRGrabInteractable>();
+                addedGrab = true;
             }
 
-            if (grab != null && m_ConfigureGrabLikeTestCube)
+            if (grab != null)
+            {
+                // Prevent root grab from hijacking handle colliders on child objects.
+                grab.colliders.Clear();
+                Collider[] allColliders = instance.GetComponentsInChildren<Collider>(true);
+                grab.colliders.Clear();
+
+                for (int i = 0; i < allColliders.Length; i++)
+                {
+                    Collider col = allColliders[i];
+
+                    if (col == null)
+                        continue;
+
+                    // Si el collider pertenece a un handle, lo ignoramos
+                    if (col.GetComponentInParent<XRSimpleInteractable>() != null)
+                        continue;
+
+                    grab.colliders.Add(col);
+                }
+            }
+
+            // Keep prefab-authored grab settings for objects that already have XRGrabInteractable.
+            // This avoids changing behavior of prefab instances like PerfectCube.
+            if (grab != null && m_ConfigureGrabLikeTestCube && addedGrab)
             {
                 grab.useDynamicAttach = false;
                 grab.matchAttachPosition = true;
@@ -773,6 +814,36 @@ namespace CityBuilderVR
             if (gridConstraint != null)
             {
                 gridConstraint.SetGrid(resolvedGrid);
+            }
+
+            ScaleHandle[] scaleHandles = instance.GetComponentsInChildren<ScaleHandle>(true);
+            for (int i = 0; i < scaleHandles.Length; i++)
+            {
+                if (scaleHandles[i] != null)
+                {
+                    scaleHandles[i].SetGrid(resolvedGrid);
+                }
+            }
+
+            XRSimpleInteractable[] simpleHandles = instance.GetComponentsInChildren<XRSimpleInteractable>(true);
+            for (int i = 0; i < simpleHandles.Length; i++)
+            {
+                XRSimpleInteractable handleInteractable = simpleHandles[i];
+                if (handleInteractable == null)
+                {
+                    continue;
+                }
+
+                // Ensure each handle targets only its own colliders.
+                handleInteractable.colliders.Clear();
+                Collider[] ownColliders = handleInteractable.GetComponents<Collider>();
+                for (int j = 0; j < ownColliders.Length; j++)
+                {
+                    if (ownColliders[j] != null)
+                    {
+                        handleInteractable.colliders.Add(ownColliders[j]);
+                    }
+                }
             }
         }
 
@@ -986,6 +1057,11 @@ namespace CityBuilderVR
 
         Quaternion ResolveRotation(Transform spawnPoint)
         {
+            if (m_ForceIdentityRotation)
+            {
+                return Quaternion.identity;
+            }
+
             if (spawnPoint == null)
             {
                 return Quaternion.identity;
