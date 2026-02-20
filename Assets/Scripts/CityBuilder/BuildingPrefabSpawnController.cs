@@ -354,9 +354,11 @@ namespace CityBuilderVR
                 return null;
             }
 
+            parent = null;
+
             GameObject instance = parent != null
                 ? Instantiate(prefab, position, rotation, parent)
-                : Instantiate(prefab, position, rotation);
+                : Instantiate(prefab, position, rotation, null);
 
             if (m_UseSpawnPointScale && m_DefaultSpawnPoint != null)
             {
@@ -532,19 +534,17 @@ namespace CityBuilderVR
             Rigidbody[] rigidbodies = preview.GetComponentsInChildren<Rigidbody>(true);
             for (int i = 0; i < rigidbodies.Length; i++)
             {
-                DestroyComponent(rigidbodies[i]);
-            }
+                Rigidbody body = rigidbodies[i];
+                if (body == null)
+                {
+                    continue;
+                }
 
-            XRGrabInteractable[] grabs = preview.GetComponentsInChildren<XRGrabInteractable>(true);
-            for (int i = 0; i < grabs.Length; i++)
-            {
-                DestroyComponent(grabs[i]);
-            }
-
-            GridMovementConstraint[] constraints = preview.GetComponentsInChildren<GridMovementConstraint>(true);
-            for (int i = 0; i < constraints.Length; i++)
-            {
-                DestroyComponent(constraints[i]);
+                body.useGravity = false;
+                body.isKinematic = true;
+                body.detectCollisions = false;
+                body.linearVelocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
             }
 
             Collider[] colliders = preview.GetComponentsInChildren<Collider>(true);
