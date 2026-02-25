@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 748331000912301607}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Handlers
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -51,7 +51,8 @@ GameObject:
   - component: {fileID: 536469412840977647}
   - component: {fileID: 1652947271564953618}
   - component: {fileID: 600232338724840218}
-  m_Layer: 0
+  - component: {fileID: 5642916805438708391}
+  m_Layer: 8
   m_Name: PerfectCube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -194,7 +195,7 @@ MonoBehaviour:
   m_Colliders:
   - {fileID: 5771051208922490136}
   m_InteractionLayers:
-    m_Bits: 3
+    m_Bits: 1
   m_DistanceCalculationMode: 1
   m_SelectMode: 0
   m_FocusMode: 1
@@ -349,6 +350,23 @@ MonoBehaviour:
   _handleRight: {fileID: 1256411121751818399}
   _handleFront: {fileID: 1858754424986102636}
   _offset: 0.1
+--- !u!114 &5642916805438708391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2853952606427955886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edb1e5fd134cded1ead5465bd8718180, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PerfectCubeSetup
+  grabInteractable: {fileID: 1867655206568548739}
+  handleColliders:
+  - {fileID: 4210563091716229589}
+  - {fileID: 1354328704782306240}
+  - {fileID: 937226509504793119}
 --- !u!1 &4820830834893735984
 GameObject:
   m_ObjectHideFlags: 0
@@ -364,7 +382,7 @@ GameObject:
   - component: {fileID: 6479678130719607799}
   - component: {fileID: 8358848668722539830}
   - component: {fileID: 1561257744138792889}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Handle_Up
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -522,7 +540,7 @@ MonoBehaviour:
   m_InteractionManager: {fileID: 0}
   m_Colliders: []
   m_InteractionLayers:
-    m_Bits: 1
+    m_Bits: 5
   m_DistanceCalculationMode: 1
   m_SelectMode: 0
   m_FocusMode: 1
@@ -596,7 +614,7 @@ GameObject:
   - component: {fileID: 7951562449080880026}
   - component: {fileID: 235627095915700986}
   - component: {fileID: 9131967819437860892}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Handle_Side_Z
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -754,7 +772,7 @@ MonoBehaviour:
   m_InteractionManager: {fileID: 0}
   m_Colliders: []
   m_InteractionLayers:
-    m_Bits: 3
+    m_Bits: 5
   m_DistanceCalculationMode: 1
   m_SelectMode: 0
   m_FocusMode: 1
@@ -828,7 +846,7 @@ GameObject:
   - component: {fileID: 3658719954137853692}
   - component: {fileID: 760163225538798999}
   - component: {fileID: 6159106902422025129}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Handle_Side_X
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -986,7 +1004,7 @@ MonoBehaviour:
   m_InteractionManager: {fileID: 0}
   m_Colliders: []
   m_InteractionLayers:
-    m_Bits: 1
+    m_Bits: 5
   m_DistanceCalculationMode: 1
   m_SelectMode: 0
   m_FocusMode: 1
