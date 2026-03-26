@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fe9187c0c7cc16fd8ceef98f0f10a2c, type: 3}
+  m_Name: SchoolBuilding
+  m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.BuildingDefinitionSO
+  m_Id: school
+  m_DisplayName: School
+  m_Icon: {fileID: 0}
+  m_Prefab: {fileID: 2853952606427955886, guid: f0f4f47773118b12eaf525d698e14756,
+    type: 3}
+  m_StartUnlocked: 1
+  m_RequiredLevel: 1
+  m_BuildCost: 300
+  m_MaintenanceCostPerTick: 4
+  m_ExperienceReward: 12
+  m_Category: 2
+  m_PopulationCapacity: 0
+  m_IncomePerTick: 0
+  m_FlatHappinessBonus: 1.5
+  m_RequiredResources: []
+  m_ProvidedResourceAreas:
+  - resourceType: {fileID: 11400000, guid: 295909e91f0de38a29d1de714d10e9f2, type: 2}
+    radius: 5
+  m_ResourceOutputs: []
+  m_ResourceDemands: []

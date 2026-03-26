@@ -96,7 +96,7 @@ namespace CityBuilderVR.Editor
 
             EditorGUILayout.PropertyField(m_BuildingSlots, new GUIContent("Building Slots (Advanced)"), true);
             EditorGUILayout.HelpBox(
-                "Quick Prefab List te permite asignar prefabs rapido. Slots es la version avanzada (nombre + icono + prefab).",
+                "El flujo recomendado ahora es montar el panel con Canvas/Content/Slot Template en Unity UI y usar este componente solo para poblar slots. Quick Prefab List sigue disponible como atajo; Slots es la version avanzada (nombre + icono + prefab).",
                 MessageType.Info);
         }
 

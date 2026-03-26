@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e81ea1bb25b50c16a89a5baa87a9260, type: 3}
+  m_Name: BuildingCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.BuildingCatalogSO
+  m_Buildings:
+  - {fileID: 11400000, guid: 29e99c76cdde862bd9b3b9a048b6ea9e, type: 2}
+  - {fileID: 11400000, guid: 679eb08c05ae4c74b1226276d2d8e351, type: 2}
+  - {fileID: 11400000, guid: 2f1f3d47447c45c48af612e0fe9959ff, type: 2}
+  - {fileID: 11400000, guid: 194cdb32c90d4135b90ed9e29974959f, type: 2}
+  - {fileID: 11400000, guid: 4c2f1a6b7483418ba3ef51ec737185a0, type: 2}
+  - {fileID: 11400000, guid: df37b36d3bb74764a444454654486549, type: 2}
+  - {fileID: 11400000, guid: 1ac2b3e6e3014e8088d6b95076925a5b, type: 2}
+  - {fileID: 11400000, guid: af300dd7486f40ad8c6ac8eafd04a00f, type: 2}

@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.Events;
 using UnityEngine.Rendering;
-using UnityEngine.EventSystems;
 using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
@@ -14,6 +14,7 @@ using Mouse = UnityEngine.InputSystem.Mouse;
 
 namespace CityBuilderVR
 {
+    [DisallowMultipleComponent]
     public class BuildingPrefabSpawnController : MonoBehaviour
     {
         [Serializable]
@@ -28,6 +29,8 @@ namespace CityBuilderVR
 
         [Header("References")]
         [SerializeField] BuildingPanelUI m_BuildingPanelUI;
+        [SerializeField] BuildingPanelCatalogBinder m_BuildingCatalogBinder;
+        [SerializeField] CityBuildingPlacementService m_BuildingPlacementService;
 
         [Header("Default Spawn")]
         [SerializeField] Transform m_DefaultSpawnPoint;
@@ -45,7 +48,8 @@ namespace CityBuilderVR
         [SerializeField, Min(0f)] float m_PreviewLift = 0.01f;
         [SerializeField] bool m_HidePreviewWhenNoHit = true;
         [SerializeField] bool m_DisableScriptsOnPreview = true;
-        [SerializeField] Color m_PreviewTint = new Color(0.25f, 0.75f, 1f, 0.45f);
+        [SerializeField] Color m_PreviewTint = new(0.25f, 0.75f, 1f, 0.45f);
+        [SerializeField] Color m_InvalidPreviewTint = new(1f, 0.35f, 0.35f, 0.45f);
 
         [Header("Debug Input")]
         [SerializeField] bool m_UseDebugKeyboardShortcuts = true;
@@ -75,14 +79,15 @@ namespace CityBuilderVR
         [SerializeField, Min(0.01f)] float m_SpawnedBodyMass = 1f;
 
         [Header("Events")]
-        [SerializeField] PrefabChangedEvent m_OnSelectedPrefabChanged = new PrefabChangedEvent();
-        [SerializeField] PrefabSpawnedEvent m_OnPrefabSpawned = new PrefabSpawnedEvent();
+        [SerializeField] PrefabChangedEvent m_OnSelectedPrefabChanged = new();
+        [SerializeField] PrefabSpawnedEvent m_OnPrefabSpawned = new();
 
         int m_SelectedSlotIndex = -1;
         GameObject m_SelectedPrefab;
 
         GameObject m_PreviewInstance;
         bool m_PreviewHasValidCell;
+        bool m_LastPreviewValidity = true;
         float m_PreviewHalfHeight;
         float m_CurrentPreviewYaw;
         Vector3 m_LastPreviewWorldPosition;
@@ -101,22 +106,17 @@ namespace CityBuilderVR
 
         void Reset()
         {
-            if (m_BuildingPanelUI == null)
-            {
-                m_BuildingPanelUI = GetComponent<BuildingPanelUI>();
-            }
+            ResolveReferences();
         }
 
         void Awake()
         {
-            if (m_BuildingPanelUI == null)
-            {
-                m_BuildingPanelUI = GetComponent<BuildingPanelUI>();
-            }
+            ResolveReferences();
         }
 
         void Start()
         {
+            ResolveReferences();
             TryAutoAssignPreviewFollowOrigin();
         }
 
@@ -150,50 +150,8 @@ namespace CityBuilderVR
                 UpdatePreviewTransform();
             }
 
-            if (!m_UseDebugKeyboardShortcuts || !m_UsePreviewPlacement)
-            {
-                HandleXRControllerInput();
-                return;
-            }
-
-            if (IsDebugConfirmPressed())
-            {
-                ConfirmPlacement();
-            }
-
-            if (IsDebugKeyPressed(m_CancelKey))
-            {
-                CancelPlacement();
-            }
-
-            if (IsDebugKeyPressed(m_RotateLeftKey))
-            {
-                RotatePreviewCounterClockwise();
-            }
-
-            if (IsDebugKeyPressed(m_RotateRightKey))
-            {
-                RotatePreviewClockwise();
-            }
-
+            HandleDebugInput();
             HandleXRControllerInput();
-        }
-
-        void HandleSlotSelected(int slotIndex, GameObject prefab)
-        {
-            m_SelectedSlotIndex = slotIndex;
-            SetSelectedPrefab(prefab);
-
-            if (m_UsePreviewPlacement)
-            {
-                BeginPreviewForSelected();
-                return;
-            }
-
-            if (m_SpawnOnSelection)
-            {
-                SpawnSelectedAtDefaultPoint();
-            }
         }
 
         public void BindPanel(BuildingPanelUI panel)
@@ -216,16 +174,43 @@ namespace CityBuilderVR
             }
         }
 
+        public void BindPlacementService(CityBuildingPlacementService placementService)
+        {
+            m_BuildingPlacementService = placementService;
+        }
+
         public void SetSelectedPrefab(GameObject prefab)
         {
             m_SelectedPrefab = prefab;
             m_OnSelectedPrefabChanged.Invoke(prefab);
+
+            if (prefab == null)
+            {
+                ClearPreview();
+            }
         }
 
         public bool TryGetSelectedPrefab(out GameObject prefab)
         {
             prefab = m_SelectedPrefab;
             return prefab != null;
+        }
+
+        public bool TryGetSelectedBuildingDefinition(out BuildingDefinitionSO definition)
+        {
+            if (m_BuildingCatalogBinder != null && m_BuildingCatalogBinder.TryGetSelectedDefinition(out definition))
+            {
+                return definition != null;
+            }
+
+            if (m_SelectedPrefab != null && m_SelectedPrefab.TryGetComponent(out BuildingDefinitionAuthoring authoring))
+            {
+                definition = authoring.Definition;
+                return definition != null;
+            }
+
+            definition = null;
+            return false;
         }
 
         public void BeginPreviewForSelected()
@@ -291,12 +276,7 @@ namespace CityBuilderVR
 
         public void RotatePreview(float deltaYawDegrees)
         {
-            if (m_ForceIdentityRotation)
-            {
-                return;
-            }
-
-            if (m_PreviewInstance == null)
+            if (m_ForceIdentityRotation || m_PreviewInstance == null)
             {
                 return;
             }
@@ -307,22 +287,17 @@ namespace CityBuilderVR
 
         public GameObject SpawnSelectedAtDefaultPoint()
         {
+            if (m_SelectedPrefab == null)
+            {
+                return null;
+            }
+
             if (m_DefaultSpawnPoint != null)
             {
-                return SpawnSelectedAt(m_DefaultSpawnPoint.position, ResolveRotation(m_DefaultSpawnPoint), m_DefaultSpawnParent);
+                return SpawnPrefab(m_SelectedPrefab, m_DefaultSpawnPoint.position, ResolveRotation(m_DefaultSpawnPoint), m_DefaultSpawnParent);
             }
 
-            return SpawnSelectedAt(transform.position, transform.rotation, m_DefaultSpawnParent);
-        }
-
-        public GameObject SpawnSelectedAt(Transform spawnPoint)
-        {
-            if (spawnPoint == null)
-            {
-                return SpawnSelectedAtDefaultPoint();
-            }
-
-            return SpawnSelectedAt(spawnPoint.position, ResolveRotation(spawnPoint), m_DefaultSpawnParent);
+            return SpawnPrefab(m_SelectedPrefab, transform.position, ResolveRotation(transform), m_DefaultSpawnParent);
         }
 
         public GameObject SpawnSelectedAt(Vector3 position, Quaternion rotation)
@@ -354,11 +329,18 @@ namespace CityBuilderVR
                 return null;
             }
 
-            parent = null;
+            ResolvePlacementService();
+            BuildingDefinitionSO definition = ResolveBuildingDefinition(prefab);
+            if (m_BuildingPlacementService != null &&
+                !m_BuildingPlacementService.CanPlace(prefab, definition, position, true, out string placementError))
+            {
+                Debug.LogWarning(placementError, this);
+                return null;
+            }
 
             GameObject instance = parent != null
                 ? Instantiate(prefab, position, rotation, parent)
-                : Instantiate(prefab, position, rotation, null);
+                : Instantiate(prefab, position, rotation);
 
             if (m_UseSpawnPointScale && m_DefaultSpawnPoint != null)
             {
@@ -367,8 +349,79 @@ namespace CityBuilderVR
 
             SetupGridPlacement(instance);
 
+            if (m_BuildingPlacementService != null &&
+                !m_BuildingPlacementService.FinalizePlacement(instance, definition, position, out string finalizeError))
+            {
+                Debug.LogWarning(finalizeError, this);
+                DestroyGameObject(instance);
+                return null;
+            }
+
             m_OnPrefabSpawned.Invoke(instance);
             return instance;
+        }
+
+        void HandleSlotSelected(int slotIndex, GameObject prefab)
+        {
+            m_SelectedSlotIndex = slotIndex;
+            SetSelectedPrefab(prefab);
+
+            if (m_UsePreviewPlacement)
+            {
+                BeginPreviewForSelected();
+                return;
+            }
+
+            if (m_SpawnOnSelection)
+            {
+                SpawnSelectedAtDefaultPoint();
+            }
+        }
+
+        void ResolveReferences()
+        {
+            if (m_BuildingPanelUI == null)
+            {
+                m_BuildingPanelUI = GetComponent<BuildingPanelUI>();
+            }
+
+            if (m_BuildingCatalogBinder == null)
+            {
+                m_BuildingCatalogBinder = GetComponent<BuildingPanelCatalogBinder>();
+            }
+
+            ResolvePlacementService();
+        }
+
+        void ResolvePlacementService()
+        {
+            if (m_BuildingPlacementService == null)
+            {
+                m_BuildingPlacementService = FindFirstObjectByType<CityBuildingPlacementService>();
+            }
+        }
+
+        BuildingDefinitionSO ResolveBuildingDefinition(GameObject prefab)
+        {
+            if (prefab == null)
+            {
+                return null;
+            }
+
+            if (m_BuildingCatalogBinder != null &&
+                m_BuildingCatalogBinder.TryGetSelectedDefinition(out BuildingDefinitionSO selectedDefinition) &&
+                selectedDefinition != null &&
+                selectedDefinition.Prefab == prefab)
+            {
+                return selectedDefinition;
+            }
+
+            if (prefab.TryGetComponent(out BuildingDefinitionAuthoring authoring))
+            {
+                return authoring.Definition;
+            }
+
+            return null;
         }
 
         void CreatePreviewInstance(GameObject prefab)
@@ -385,6 +438,7 @@ namespace CityBuilderVR
 
             PreparePreviewInstance(m_PreviewInstance);
             m_PreviewHalfHeight = ComputeHalfHeight(m_PreviewInstance);
+            m_LastPreviewValidity = true;
 
             UpdatePreviewTransform();
         }
@@ -400,7 +454,8 @@ namespace CityBuilderVR
             if (!TryGetPlacementPoint(placementRay, out Vector3 placementPoint))
             {
                 m_PreviewHasValidCell = false;
-                if (m_HidePreviewWhenNoHit && m_PreviewInstance.activeSelf)
+
+                if (m_HidePreviewWhenNoHit)
                 {
                     m_PreviewInstance.SetActive(false);
                 }
@@ -421,16 +476,45 @@ namespace CityBuilderVR
 
             placementPoint.y += m_PreviewHalfHeight + m_PreviewLift;
 
-            Quaternion rotation = Quaternion.Euler(0f, m_CurrentPreviewYaw, 0f);
-            if (m_ForceIdentityRotation)
-            {
-                rotation = Quaternion.identity;
-            }
+            Quaternion rotation = ResolvePreviewRotation();
             m_PreviewInstance.transform.SetPositionAndRotation(placementPoint, rotation);
 
             m_LastPreviewWorldPosition = placementPoint;
             m_LastPreviewWorldRotation = rotation;
-            m_PreviewHasValidCell = true;
+            m_PreviewHasValidCell = CanPlaceAtPreviewPosition(placementPoint);
+
+            if (m_LastPreviewValidity != m_PreviewHasValidCell)
+            {
+                ApplyPreviewVisuals(m_PreviewInstance, m_PreviewHasValidCell ? m_PreviewTint : m_InvalidPreviewTint);
+                m_LastPreviewValidity = m_PreviewHasValidCell;
+            }
+        }
+
+        Quaternion ResolvePreviewRotation()
+        {
+            if (m_ForceIdentityRotation)
+            {
+                return Quaternion.identity;
+            }
+
+            return Quaternion.Euler(0f, m_CurrentPreviewYaw, 0f);
+        }
+
+        bool CanPlaceAtPreviewPosition(Vector3 worldPosition)
+        {
+            if (m_SelectedPrefab == null)
+            {
+                return false;
+            }
+
+            ResolvePlacementService();
+            if (m_BuildingPlacementService == null)
+            {
+                return true;
+            }
+
+            BuildingDefinitionSO definition = ResolveBuildingDefinition(m_SelectedPrefab);
+            return m_BuildingPlacementService.CanPlace(m_SelectedPrefab, definition, worldPosition, false, out _);
         }
 
         Ray BuildPlacementRay()
@@ -443,16 +527,12 @@ namespace CityBuilderVR
             Camera mainCamera = Camera.main;
             if (mainCamera != null)
             {
-                Vector3 center = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f);
+                Vector3 center = new(Screen.width * 0.5f, Screen.height * 0.5f, 0f);
                 return mainCamera.ScreenPointToRay(center);
             }
 
-            if (m_DefaultSpawnPoint != null)
-            {
-                return new Ray(m_DefaultSpawnPoint.position, m_DefaultSpawnPoint.forward);
-            }
-
-            return new Ray(transform.position, transform.forward);
+            Transform source = m_DefaultSpawnPoint != null ? m_DefaultSpawnPoint : transform;
+            return new Ray(source.position, source.forward);
         }
 
         void TryAutoAssignPreviewFollowOrigin()
@@ -462,24 +542,18 @@ namespace CityBuilderVR
                 return;
             }
 
-            XRRayInteractor[] rayInteractors = FindObjectsOfType<XRRayInteractor>(true);
+            XRRayInteractor[] rayInteractors = FindObjectsByType<XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             if (rayInteractors == null || rayInteractors.Length == 0)
             {
                 return;
             }
 
-            string handNameHint = m_ControllerNodeForPlacement == XRNode.LeftHand ? "left" : "right";
+            string handHint = m_ControllerNodeForPlacement == XRNode.LeftHand ? "left" : "right";
             for (int i = 0; i < rayInteractors.Length; i++)
             {
                 XRRayInteractor interactor = rayInteractors[i];
-                if (interactor == null)
-                {
-                    continue;
-                }
-
-                string interactorName = interactor.name;
-                if (!string.IsNullOrEmpty(interactorName) &&
-                    interactorName.IndexOf(handNameHint, StringComparison.OrdinalIgnoreCase) >= 0)
+                if (interactor != null &&
+                    interactor.name.IndexOf(handHint, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     m_PreviewFollowOrigin = interactor.transform;
                     return;
@@ -500,7 +574,7 @@ namespace CityBuilderVR
             GridDefinition grid = ResolveGridDefinition();
             if (grid != null)
             {
-                Plane gridPlane = new Plane(Vector3.up, grid.Origin);
+                Plane gridPlane = new(Vector3.up, grid.Origin);
                 if (gridPlane.Raycast(ray, out float enterDistance))
                 {
                     point = ray.GetPoint(enterDistance);
@@ -534,23 +608,25 @@ namespace CityBuilderVR
             Rigidbody[] rigidbodies = preview.GetComponentsInChildren<Rigidbody>(true);
             for (int i = 0; i < rigidbodies.Length; i++)
             {
-                Rigidbody body = rigidbodies[i];
-                if (body == null)
+                if (rigidbodies[i] == null)
                 {
                     continue;
                 }
 
-                body.useGravity = false;
-                body.isKinematic = true;
-                body.detectCollisions = false;
-                body.linearVelocity = Vector3.zero;
-                body.angularVelocity = Vector3.zero;
+                rigidbodies[i].useGravity = false;
+                rigidbodies[i].isKinematic = true;
+                rigidbodies[i].detectCollisions = false;
+                rigidbodies[i].linearVelocity = Vector3.zero;
+                rigidbodies[i].angularVelocity = Vector3.zero;
             }
 
             Collider[] colliders = preview.GetComponentsInChildren<Collider>(true);
             for (int i = 0; i < colliders.Length; i++)
             {
-                colliders[i].enabled = false;
+                if (colliders[i] != null)
+                {
+                    colliders[i].enabled = false;
+                }
             }
 
             int ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
@@ -559,10 +635,10 @@ namespace CityBuilderVR
                 SetLayerRecursively(preview.transform, ignoreRaycastLayer);
             }
 
-            ApplyPreviewVisuals(preview);
+            ApplyPreviewVisuals(preview, m_PreviewTint);
         }
 
-        void ApplyPreviewVisuals(GameObject preview)
+        void ApplyPreviewVisuals(GameObject preview, Color tint)
         {
             Renderer[] renderers = preview.GetComponentsInChildren<Renderer>(true);
             for (int i = 0; i < renderers.Length; i++)
@@ -581,7 +657,7 @@ namespace CityBuilderVR
                     }
 
                     MakeMaterialTransparent(material);
-                    TintMaterial(material, m_PreviewTint);
+                    TintMaterial(material, tint);
                 }
             }
         }
@@ -626,14 +702,14 @@ namespace CityBuilderVR
         {
             if (material.HasProperty("_BaseColor"))
             {
-                Color color = material.GetColor("_BaseColor");
-                material.SetColor("_BaseColor", Color.Lerp(color, tint, 0.65f));
+                Color baseColor = material.GetColor("_BaseColor");
+                material.SetColor("_BaseColor", Color.Lerp(baseColor, tint, 0.7f));
             }
 
             if (material.HasProperty("_Color"))
             {
                 Color color = material.GetColor("_Color");
-                material.SetColor("_Color", Color.Lerp(color, tint, 0.65f));
+                material.SetColor("_Color", Color.Lerp(color, tint, 0.7f));
             }
         }
 
@@ -650,6 +726,11 @@ namespace CityBuilderVR
 
             for (int i = 0; i < renderers.Length; i++)
             {
+                if (renderers[i] == null)
+                {
+                    continue;
+                }
+
                 if (!hasBounds)
                 {
                     combinedBounds = renderers[i].bounds;
@@ -666,6 +747,11 @@ namespace CityBuilderVR
                 Collider[] colliders = target.GetComponentsInChildren<Collider>(true);
                 for (int i = 0; i < colliders.Length; i++)
                 {
+                    if (colliders[i] == null)
+                    {
+                        continue;
+                    }
+
                     if (!hasBounds)
                     {
                         combinedBounds = colliders[i].bounds;
@@ -678,12 +764,7 @@ namespace CityBuilderVR
                 }
             }
 
-            if (!hasBounds)
-            {
-                return 0f;
-            }
-
-            return Mathf.Max(0f, combinedBounds.extents.y);
+            return hasBounds ? Mathf.Max(0f, combinedBounds.extents.y) : 0f;
         }
 
         void ClearPreview()
@@ -696,6 +777,7 @@ namespace CityBuilderVR
 
             m_PreviewHasValidCell = false;
             m_PreviewHalfHeight = 0f;
+            m_LastPreviewValidity = true;
             ResetXRInputEdgeState();
         }
 
@@ -720,8 +802,8 @@ namespace CityBuilderVR
                 return;
             }
 
-            GridDefinition resolvedGrid = ResolveGridDefinition();
-            if (resolvedGrid == null)
+            GridDefinition grid = ResolveGridDefinition();
+            if (grid == null)
             {
                 return;
             }
@@ -734,23 +816,20 @@ namespace CityBuilderVR
                 addedBody = true;
             }
 
-            if (body != null)
+            if (body != null && addedBody)
             {
-                if (addedBody)
-                {
-                    body.mass = Mathf.Max(0.01f, m_SpawnedBodyMass);
-                    body.useGravity = m_EnableGravityOnSpawn;
-                    body.isKinematic = false;
+                body.mass = Mathf.Max(0.01f, m_SpawnedBodyMass);
+                body.useGravity = m_EnableGravityOnSpawn;
+                body.isKinematic = false;
 
-                    if (m_ConfigurePhysicsLikeTestCube)
-                    {
-                        body.interpolation = RigidbodyInterpolation.Interpolate;
-                        body.collisionDetectionMode = CollisionDetectionMode.Continuous;
-                        body.constraints =
-                            RigidbodyConstraints.FreezePositionY |
-                            RigidbodyConstraints.FreezeRotationX |
-                            RigidbodyConstraints.FreezeRotationZ;
-                    }
+                if (m_ConfigurePhysicsLikeTestCube)
+                {
+                    body.interpolation = RigidbodyInterpolation.Interpolate;
+                    body.collisionDetectionMode = CollisionDetectionMode.Continuous;
+                    body.constraints =
+                        RigidbodyConstraints.FreezePositionY |
+                        RigidbodyConstraints.FreezeRotationX |
+                        RigidbodyConstraints.FreezeRotationZ;
                 }
             }
 
@@ -764,29 +843,21 @@ namespace CityBuilderVR
 
             if (grab != null)
             {
-                // Prevent root grab from hijacking handle colliders on child objects.
                 grab.colliders.Clear();
                 Collider[] allColliders = instance.GetComponentsInChildren<Collider>(true);
-                grab.colliders.Clear();
-
                 for (int i = 0; i < allColliders.Length; i++)
                 {
-                    Collider col = allColliders[i];
-
-                    if (col == null)
+                    Collider collider = allColliders[i];
+                    if (collider == null || collider.GetComponentInParent<XRSimpleInteractable>() != null)
+                    {
                         continue;
+                    }
 
-                    // Si el collider pertenece a un handle, lo ignoramos
-                    if (col.GetComponentInParent<XRSimpleInteractable>() != null)
-                        continue;
-
-                    grab.colliders.Add(col);
+                    grab.colliders.Add(collider);
                 }
             }
 
-            // Keep prefab-authored grab settings for objects that already have XRGrabInteractable.
-            // This avoids changing behavior of prefab instances like PerfectCube.
-            if (grab != null && m_ConfigureGrabLikeTestCube && addedGrab)
+            if (grab != null && addedGrab && m_ConfigureGrabLikeTestCube)
             {
                 grab.useDynamicAttach = false;
                 grab.matchAttachPosition = true;
@@ -813,7 +884,7 @@ namespace CityBuilderVR
 
             if (gridConstraint != null)
             {
-                gridConstraint.SetGrid(resolvedGrid);
+                gridConstraint.SetGrid(grid);
             }
 
             ScaleHandle[] scaleHandles = instance.GetComponentsInChildren<ScaleHandle>(true);
@@ -821,29 +892,63 @@ namespace CityBuilderVR
             {
                 if (scaleHandles[i] != null)
                 {
-                    scaleHandles[i].SetGrid(resolvedGrid);
+                    scaleHandles[i].SetGrid(grid);
                 }
             }
 
-            XRSimpleInteractable[] simpleHandles = instance.GetComponentsInChildren<XRSimpleInteractable>(true);
-            for (int i = 0; i < simpleHandles.Length; i++)
+            XRSimpleInteractable[] handleInteractables = instance.GetComponentsInChildren<XRSimpleInteractable>(true);
+            for (int i = 0; i < handleInteractables.Length; i++)
             {
-                XRSimpleInteractable handleInteractable = simpleHandles[i];
-                if (handleInteractable == null)
+                XRSimpleInteractable handle = handleInteractables[i];
+                if (handle == null)
                 {
                     continue;
                 }
 
-                // Ensure each handle targets only its own colliders.
-                handleInteractable.colliders.Clear();
-                Collider[] ownColliders = handleInteractable.GetComponents<Collider>();
+                handle.colliders.Clear();
+                Collider[] ownColliders = handle.GetComponents<Collider>();
                 for (int j = 0; j < ownColliders.Length; j++)
                 {
                     if (ownColliders[j] != null)
                     {
-                        handleInteractable.colliders.Add(ownColliders[j]);
+                        handle.colliders.Add(ownColliders[j]);
                     }
                 }
+            }
+        }
+
+        void HandleDebugInput()
+        {
+            if (!m_UseDebugKeyboardShortcuts)
+            {
+                return;
+            }
+
+            if (m_UsePreviewPlacement)
+            {
+                if (IsDebugConfirmPressed())
+                {
+                    ConfirmPlacement();
+                }
+
+                if (IsDebugKeyPressed(m_CancelKey))
+                {
+                    CancelPlacement();
+                }
+
+                if (IsDebugKeyPressed(m_RotateLeftKey))
+                {
+                    RotatePreviewCounterClockwise();
+                }
+
+                if (IsDebugKeyPressed(m_RotateRightKey))
+                {
+                    RotatePreviewClockwise();
+                }
+            }
+            else if (IsDebugConfirmPressed())
+            {
+                SpawnSelectedAtDefaultPoint();
             }
         }
 
@@ -882,8 +987,7 @@ namespace CityBuilderVR
                 return;
             }
 
-            float stickX = axis.x;
-            if (Mathf.Abs(stickX) < m_StickRotateDeadzone * 0.5f)
+            if (Mathf.Abs(axis.x) < m_StickRotateDeadzone * 0.5f)
             {
                 m_StickRotateReady = true;
                 return;
@@ -894,26 +998,16 @@ namespace CityBuilderVR
                 return;
             }
 
-            if (stickX >= m_StickRotateDeadzone)
+            if (axis.x >= m_StickRotateDeadzone)
             {
                 RotatePreviewClockwise();
                 m_StickRotateReady = false;
             }
-            else if (stickX <= -m_StickRotateDeadzone)
+            else if (axis.x <= -m_StickRotateDeadzone)
             {
                 RotatePreviewCounterClockwise();
                 m_StickRotateReady = false;
             }
-        }
-
-        bool GetBoolFeature(InputDevice device, InputFeatureUsage<bool> featureUsage)
-        {
-            if (device.TryGetFeatureValue(featureUsage, out bool value))
-            {
-                return value;
-            }
-
-            return false;
         }
 
         bool TryGetPlacementInputDevice(out InputDevice device)
@@ -937,22 +1031,19 @@ namespace CityBuilderVR
             }
 
             float threshold = Mathf.Clamp01(m_TriggerPressThreshold);
-            if (device.TryGetFeatureValue(CommonUsages.trigger, out float triggerValue) && triggerValue >= threshold)
-            {
-                return true;
-            }
-
-            if (device.TryGetFeatureValue(CommonUsages.grip, out float gripValue) && gripValue >= threshold)
-            {
-                return true;
-            }
-
-            return false;
+            return
+                (device.TryGetFeatureValue(CommonUsages.trigger, out float triggerValue) && triggerValue >= threshold) ||
+                (device.TryGetFeatureValue(CommonUsages.grip, out float gripValue) && gripValue >= threshold);
         }
 
         bool GetCancelButtonPressed(InputDevice device)
         {
             return GetBoolFeature(device, CommonUsages.secondaryButton) || GetBoolFeature(device, CommonUsages.menuButton);
+        }
+
+        static bool GetBoolFeature(InputDevice device, InputFeatureUsage<bool> featureUsage)
+        {
+            return device.TryGetFeatureValue(featureUsage, out bool value) && value;
         }
 
         bool IsDebugConfirmPressed()
@@ -967,11 +1058,6 @@ namespace CityBuilderVR
                 return false;
             }
 
-            return IsMouseLeftPressedOutsideUI();
-        }
-
-        bool IsMouseLeftPressedOutsideUI()
-        {
 #if ENABLE_INPUT_SYSTEM
             Mouse mouse = Mouse.current;
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
@@ -1000,31 +1086,15 @@ namespace CityBuilderVR
                 return false;
             }
 
-            switch (key)
+            return key switch
             {
-                case KeyCode.Return:
-                    return keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame;
-                case KeyCode.Escape:
-                    return keyboard.escapeKey.wasPressedThisFrame;
-                case KeyCode.Q:
-                    return keyboard.qKey.wasPressedThisFrame;
-                case KeyCode.E:
-                    return keyboard.eKey.wasPressedThisFrame;
-                case KeyCode.Space:
-                    return keyboard.spaceKey.wasPressedThisFrame;
-                case KeyCode.Tab:
-                    return keyboard.tabKey.wasPressedThisFrame;
-                case KeyCode.LeftArrow:
-                    return keyboard.leftArrowKey.wasPressedThisFrame;
-                case KeyCode.RightArrow:
-                    return keyboard.rightArrowKey.wasPressedThisFrame;
-                case KeyCode.UpArrow:
-                    return keyboard.upArrowKey.wasPressedThisFrame;
-                case KeyCode.DownArrow:
-                    return keyboard.downArrowKey.wasPressedThisFrame;
-                default:
-                    return false;
-            }
+                KeyCode.Return => keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame,
+                KeyCode.Escape => keyboard.escapeKey.wasPressedThisFrame,
+                KeyCode.Q => keyboard.qKey.wasPressedThisFrame,
+                KeyCode.E => keyboard.eKey.wasPressedThisFrame,
+                KeyCode.Space => keyboard.spaceKey.wasPressedThisFrame,
+                _ => false,
+            };
 #elif ENABLE_LEGACY_INPUT_MANAGER
             return Input.GetKeyDown(key);
 #else
@@ -1041,49 +1111,22 @@ namespace CityBuilderVR
 
         GridDefinition ResolveGridDefinition()
         {
-            if (m_GridDefinition != null)
-            {
-                return m_GridDefinition;
-            }
-
-            m_GridDefinition = FindFirstObjectByType<GridDefinition>();
             if (m_GridDefinition == null)
             {
-                Debug.LogWarning("No GridDefinition found in scene. Objects will spawn without grid snapping.", this);
+                m_GridDefinition = FindFirstObjectByType<GridDefinition>();
             }
 
             return m_GridDefinition;
         }
 
-        Quaternion ResolveRotation(Transform spawnPoint)
+        Quaternion ResolveRotation(Transform source)
         {
-            if (m_ForceIdentityRotation)
+            if (m_ForceIdentityRotation || source == null)
             {
                 return Quaternion.identity;
             }
 
-            if (spawnPoint == null)
-            {
-                return Quaternion.identity;
-            }
-
-            return m_UseSpawnPointRotation ? spawnPoint.rotation : Quaternion.identity;
-        }
-
-        void DestroyComponent(Component component)
-        {
-            if (component == null)
-            {
-                return;
-            }
-
-            if (Application.isPlaying)
-            {
-                Destroy(component);
-                return;
-            }
-
-            DestroyImmediate(component);
+            return m_UseSpawnPointRotation ? source.rotation : Quaternion.identity;
         }
 
         void DestroyGameObject(GameObject target)
@@ -1096,10 +1139,11 @@ namespace CityBuilderVR
             if (Application.isPlaying)
             {
                 Destroy(target);
-                return;
             }
-
-            DestroyImmediate(target);
+            else
+            {
+                DestroyImmediate(target);
+            }
         }
     }
 }

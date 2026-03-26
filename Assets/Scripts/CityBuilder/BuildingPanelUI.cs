@@ -10,6 +10,7 @@ using UnityEditor;
 
 namespace CityBuilderVR
 {
+    [DisallowMultipleComponent]
     public class BuildingPanelUI : MonoBehaviour
     {
         [Serializable]
@@ -30,84 +31,62 @@ namespace CityBuilderVR
         {
         }
 
-        public enum ThemeVariant
-        {
-            Custom = 0,
-            AppleLight = 1,
-            AppleDark = 2
-        }
-
         [Header("Buildings")]
-        [SerializeField] List<BuildingSlotData> m_BuildingSlots = new List<BuildingSlotData>();
+        [SerializeField] List<BuildingSlotData> m_BuildingSlots = new();
         [SerializeField] bool m_UseQuickPrefabList = true;
         [SerializeField] bool m_AutoSyncSlotsFromQuickList = true;
         [SerializeField] bool m_OverwriteSlotNamesFromQuickList = true;
-        [SerializeField] List<GameObject> m_QuickPrefabList = new List<GameObject>();
-        [SerializeField, Min(1)] int m_EmptySlotCount = 6;
+        [SerializeField] List<GameObject> m_QuickPrefabList = new();
+        [SerializeField, Min(1)] int m_EmptySlotCount = 4;
         [SerializeField] bool m_DisableButtonsWithoutPrefab = true;
 
-        [Header("Panel UI")]
+        [Header("Canvas References")]
         [SerializeField] Canvas m_TargetCanvas;
         [SerializeField] string m_Title = "Buildings";
-        [SerializeField] Vector2 m_PanelSize = new Vector2(920f, 220f);
-        [SerializeField] Vector2 m_PanelAnchorOffset = new Vector2(0f, 24f);
-        [SerializeField, Min(1)] int m_Columns = 4; // Legacy serialized value, no longer used.
-        [SerializeField] Vector2 m_SlotSize = new Vector2(104f, 104f);
-        [SerializeField, Range(0f, 120f)] float m_SlotSpacing = 28f;
+        [SerializeField] RectTransform m_PanelRootOverride;
+        [SerializeField] RectTransform m_SlotsRootOverride;
+        [SerializeField] ScrollRect m_SlotScrollRect;
+        [SerializeField] BuildingSlotVisualRefs m_SlotTemplate;
+        [SerializeField] bool m_BuildPanelOnStart = true;
+        [SerializeField] bool m_CreateFallbackLayoutIfMissing = true;
+
+        [Header("Layout")]
+        [SerializeField] Vector2 m_PanelSize = new(920f, 220f);
+        [SerializeField] Vector2 m_PanelAnchorOffset = new(0f, 24f);
+        [SerializeField] Vector2 m_SlotSize = new(104f, 104f);
+        [SerializeField, Min(0f)] float m_SlotSpacing = 18f;
         [SerializeField] float m_FallbackCanvasDistance = 1.7f;
         [SerializeField] float m_FallbackCanvasScale = 0.0016f;
-        [SerializeField] bool m_BuildPanelOnStart = true;
+
+        [Header("Visuals")]
+        [SerializeField] Color m_PanelColor = new(0.08f, 0.1f, 0.13f, 0.86f);
+        [SerializeField] Color m_SlotColor = new(0.18f, 0.2f, 0.24f, 0.95f);
+        [SerializeField] Color m_SelectedSlotColor = new(0.18f, 0.45f, 0.72f, 0.98f);
+        [SerializeField] Color m_DisabledSlotColor = new(0.13f, 0.14f, 0.16f, 0.72f);
+        [SerializeField] Color m_TextColor = new(0.95f, 0.96f, 0.98f, 1f);
 
         [Header("World Space Follow")]
         [SerializeField] bool m_FollowPlayerInWorldSpace = true;
         [SerializeField] Transform m_FollowTargetOverride;
         [SerializeField] bool m_UseCurrentOffsetAsFollowOffset = true;
-        [SerializeField] Vector3 m_FollowLocalPositionOffset = new Vector3(0f, -0.12f, 1.7f);
+        [SerializeField] Vector3 m_FollowLocalPositionOffset = new(0f, -0.12f, 1.7f);
         [SerializeField] Vector3 m_FollowLocalEulerOffset = Vector3.zero;
 
-        [Header("Manual Layout (Optional)")]
-        [SerializeField] RectTransform m_PanelRootOverride;
-        [SerializeField] RectTransform m_SlotsRootOverride;
-        [SerializeField] BuildingSlotVisualRefs m_SlotTemplate;
-        [SerializeField] bool m_HideTemplateOnRuntime = true;
-
-        [Header("Default Theme")]
-        [SerializeField] ThemeVariant m_ThemeVariant = ThemeVariant.AppleLight;
-        [SerializeField] Color m_PanelColor = new Color(0.96f, 0.97f, 0.98f, 0.72f);
-        [SerializeField] Color m_HeaderColor = new Color(1f, 1f, 1f, 0.08f);
-        [SerializeField] Color m_SlotColor = new Color(1f, 1f, 1f, 0.62f);
-        [SerializeField] Color m_SlotDisabledColor = new Color(0.86f, 0.87f, 0.9f, 0.42f);
-        [SerializeField] Color m_TextColor = new Color(0.07f, 0.07f, 0.09f, 0.96f);
-        [SerializeField] Color m_IconPlaceholderColor = new Color(0.9f, 0.91f, 0.94f, 0.95f);
-        [SerializeField] Color m_IconPlaceholderDisabledColor = new Color(0.8f, 0.82f, 0.86f, 0.78f);
-        [SerializeField] bool m_UseRoundedStyle = true;
-        [SerializeField, Min(4)] int m_PanelCornerRadius = 22;
-        [SerializeField, Min(4)] int m_SlotCornerRadius = 16;
-        [SerializeField] Color m_SlotBorderColor = new Color(1f, 1f, 1f, 0.45f);
-        [SerializeField, Min(0.5f)] float m_SlotBorderThickness = 1.8f;
-        [SerializeField] Color m_PanelShadowColor = new Color(0f, 0f, 0f, 0.22f);
-
         [Header("Events")]
-        [SerializeField] BuildingSlotSelectedEvent m_OnSlotSelected = new BuildingSlotSelectedEvent();
-        [SerializeField] BuildingPrefabSelectedEvent m_OnPrefabSelected = new BuildingPrefabSelectedEvent();
+        [SerializeField] BuildingSlotSelectedEvent m_OnSlotSelected = new();
+        [SerializeField] BuildingPrefabSelectedEvent m_OnPrefabSelected = new();
 
-        RectTransform m_PanelTransform;
-        RectTransform m_SlotsRoot;
-        ScrollRect m_SlotScrollRect;
-        readonly List<Button> m_RuntimeButtons = new List<Button>();
-        readonly List<GameObject> m_RuntimeSlotObjects = new List<GameObject>();
-        Sprite m_PanelRoundedSprite;
-        Sprite m_SlotRoundedSprite;
-        Sprite m_IconRoundedSprite;
+        readonly List<BuildingSlotVisualRefs> m_RuntimeSlots = new();
+        readonly Dictionary<int, Sprite> m_EditorPrefabIconCache = new();
+
+        bool m_UsingExternalSlotsData;
         int m_SelectedSlotIndex = -1;
         GameObject m_SelectedPrefab;
+        TMP_Text m_TitleLabel;
         bool m_FollowOffsetInitialized;
         Transform m_LastFollowTarget;
         Vector3 m_RuntimeFollowLocalPositionOffset;
         Quaternion m_RuntimeFollowLocalRotationOffset;
-#if UNITY_EDITOR
-        readonly Dictionary<int, Sprite> m_EditorPrefabIconCache = new Dictionary<int, Sprite>();
-#endif
 
         public int SelectedSlotIndex => m_SelectedSlotIndex;
         public GameObject SelectedPrefab => m_SelectedPrefab;
@@ -131,86 +110,81 @@ namespace CityBuilderVR
         [ContextMenu("Build/Rebuild Panel")]
         public void BuildPanel()
         {
-            ApplyThemePreset();
-            m_FollowOffsetInitialized = false;
-            m_LastFollowTarget = null;
+            if (m_UseQuickPrefabList && m_AutoSyncSlotsFromQuickList && !m_UsingExternalSlotsData)
+            {
+                SyncSlotsFromQuickPrefabList();
+            }
+
             EnsureCanvas();
-            EnsurePanel();
+            if (!EnsureRuntimeLayout())
+            {
+                Debug.LogWarning("BuildingPanelUI could not create a valid runtime layout.", this);
+                return;
+            }
+
             RebuildSlots();
-        }
-
-        [ContextMenu("Theme/Use Apple Light")]
-        void SetAppleLightTheme()
-        {
-            m_ThemeVariant = ThemeVariant.AppleLight;
-            ApplyThemePreset();
-            BuildPanel();
-        }
-
-        [ContextMenu("Theme/Use Apple Dark")]
-        void SetAppleDarkTheme()
-        {
-            m_ThemeVariant = ThemeVariant.AppleDark;
-            ApplyThemePreset();
-            BuildPanel();
         }
 
         [ContextMenu("Buildings/Sync Slots From Quick Prefab List")]
         public void SyncSlotsFromQuickPrefabList()
         {
+            m_UsingExternalSlotsData = false;
+
             if (m_QuickPrefabList == null)
             {
                 m_QuickPrefabList = new List<GameObject>();
             }
 
-            if (m_BuildingSlots == null)
+            m_BuildingSlots.Clear();
+            for (int i = 0; i < m_QuickPrefabList.Count; i++)
             {
-                m_BuildingSlots = new List<BuildingSlotData>();
-            }
-
-            int requiredCount = m_QuickPrefabList.Count;
-
-            while (m_BuildingSlots.Count < requiredCount)
-            {
-                m_BuildingSlots.Add(new BuildingSlotData());
-            }
-
-            while (m_BuildingSlots.Count > requiredCount)
-            {
-                m_BuildingSlots.RemoveAt(m_BuildingSlots.Count - 1);
-            }
-
-            for (int i = 0; i < requiredCount; i++)
-            {
-                BuildingSlotData slot = m_BuildingSlots[i];
-                slot.buildingPrefab = m_QuickPrefabList[i];
-
-                if (slot.buildingPrefab != null &&
-                    (m_OverwriteSlotNamesFromQuickList || string.IsNullOrWhiteSpace(slot.slotName)))
+                GameObject prefab = m_QuickPrefabList[i];
+                m_BuildingSlots.Add(new BuildingSlotData
                 {
-                    slot.slotName = slot.buildingPrefab.name;
-                }
-
-                m_BuildingSlots[i] = slot;
+                    slotName = prefab != null && m_OverwriteSlotNamesFromQuickList ? prefab.name : $"Slot {i + 1}",
+                    buildingPrefab = prefab,
+                    icon = null,
+                });
             }
 
             RefreshSelectedPrefab();
         }
 
+        public void SetBuildingSlots(IReadOnlyList<BuildingSlotData> slots, bool rebuildPanel = true, bool suppressQuickPrefabSyncOnRebuild = true)
+        {
+            m_BuildingSlots.Clear();
+            m_UsingExternalSlotsData = suppressQuickPrefabSyncOnRebuild;
+
+            if (slots != null)
+            {
+                for (int i = 0; i < slots.Count; i++)
+                {
+                    m_BuildingSlots.Add(slots[i]);
+                }
+            }
+
+            RefreshSelectedPrefab();
+
+            if (rebuildPanel)
+            {
+                BuildPanel();
+            }
+        }
+
         public void RebuildSlots()
         {
-            ApplyThemePreset();
-            EnsureCanvas();
-            EnsurePanel();
-            ApplySlotLayoutSettings();
+            if (!EnsureRuntimeLayout())
+            {
+                return;
+            }
+
             ClearRuntimeSlots();
-            PrepareSlotTemplate();
 
             if (m_BuildingSlots.Count == 0)
             {
                 for (int i = 0; i < Mathf.Max(1, m_EmptySlotCount); i++)
                 {
-                    CreateSlotButton($"Empty Slot {i + 1}", null, i, false);
+                    CreateRuntimeSlot(new BuildingSlotData { slotName = $"Empty Slot {i + 1}" }, i, false);
                 }
             }
             else
@@ -218,131 +192,26 @@ namespace CityBuilderVR
                 for (int i = 0; i < m_BuildingSlots.Count; i++)
                 {
                     BuildingSlotData slot = m_BuildingSlots[i];
-                    string displayName = ResolveSlotName(slot, i);
-                    Sprite displayIcon = ResolveSlotIcon(slot);
                     bool hasPrefab = slot.buildingPrefab != null;
-                    bool canInteract = m_DisableButtonsWithoutPrefab ? hasPrefab : true;
-                    CreateSlotButton(displayName, displayIcon, i, canInteract);
+                    bool interactable = m_DisableButtonsWithoutPrefab ? hasPrefab : true;
+                    CreateRuntimeSlot(slot, i, interactable);
                 }
             }
 
+            UpdateSelectionVisuals();
             RefreshScrollState();
-            RefreshSelectedPrefab();
-        }
-
-        Transform ResolveFollowTarget()
-        {
-            if (m_FollowTargetOverride != null)
-            {
-                return m_FollowTargetOverride;
-            }
-
-            if (m_TargetCanvas != null && m_TargetCanvas.worldCamera != null)
-            {
-                return m_TargetCanvas.worldCamera.transform;
-            }
-
-            Camera mainCamera = Camera.main;
-            if (mainCamera != null)
-            {
-                return mainCamera.transform;
-            }
-
-            return null;
-        }
-
-        void UpdateFollowOffsets(RectTransform canvasRect, Transform followTarget)
-        {
-            if (canvasRect == null || followTarget == null)
-            {
-                return;
-            }
-
-            if (m_FollowOffsetInitialized && m_LastFollowTarget == followTarget)
-            {
-                return;
-            }
-
-            if (m_UseCurrentOffsetAsFollowOffset)
-            {
-                m_RuntimeFollowLocalPositionOffset = followTarget.InverseTransformPoint(canvasRect.position);
-                m_RuntimeFollowLocalRotationOffset = Quaternion.Inverse(followTarget.rotation) * canvasRect.rotation;
-            }
-            else
-            {
-                m_RuntimeFollowLocalPositionOffset = m_FollowLocalPositionOffset;
-                m_RuntimeFollowLocalRotationOffset = Quaternion.Euler(m_FollowLocalEulerOffset);
-            }
-
-            m_LastFollowTarget = followTarget;
-            m_FollowOffsetInitialized = true;
-        }
-
-        void FollowCanvasToPlayer()
-        {
-            if (!Application.isPlaying || !m_FollowPlayerInWorldSpace || m_TargetCanvas == null || m_TargetCanvas.renderMode != RenderMode.WorldSpace)
-            {
-                return;
-            }
-
-            RectTransform canvasRect = m_TargetCanvas.GetComponent<RectTransform>();
-            if (canvasRect == null)
-            {
-                return;
-            }
-
-            Transform followTarget = ResolveFollowTarget();
-            if (followTarget == null)
-            {
-                return;
-            }
-
-            UpdateFollowOffsets(canvasRect, followTarget);
-
-            canvasRect.position = followTarget.TransformPoint(m_RuntimeFollowLocalPositionOffset);
-            canvasRect.rotation = followTarget.rotation * m_RuntimeFollowLocalRotationOffset;
-        }
-
-        void ApplyThemePreset()
-        {
-            switch (m_ThemeVariant)
-            {
-                case ThemeVariant.AppleLight:
-                    m_PanelColor = new Color(0.96f, 0.97f, 0.98f, 0.72f);
-                    m_HeaderColor = new Color(1f, 1f, 1f, 0.08f);
-                    m_SlotColor = new Color(1f, 1f, 1f, 0.62f);
-                    m_SlotDisabledColor = new Color(0.86f, 0.87f, 0.9f, 0.42f);
-                    m_TextColor = new Color(0.07f, 0.07f, 0.09f, 0.96f);
-                    m_SlotBorderColor = new Color(1f, 1f, 1f, 0.45f);
-                    m_PanelShadowColor = new Color(0f, 0f, 0f, 0.22f);
-                    m_IconPlaceholderColor = new Color(0.9f, 0.91f, 0.94f, 0.95f);
-                    m_IconPlaceholderDisabledColor = new Color(0.8f, 0.82f, 0.86f, 0.78f);
-                    break;
-
-                case ThemeVariant.AppleDark:
-                    m_PanelColor = new Color(0.11f, 0.12f, 0.145f, 0.8f);
-                    m_HeaderColor = new Color(1f, 1f, 1f, 0.03f);
-                    m_SlotColor = new Color(0.2f, 0.215f, 0.245f, 0.86f);
-                    m_SlotDisabledColor = new Color(0.15f, 0.16f, 0.18f, 0.64f);
-                    m_TextColor = new Color(0.94f, 0.95f, 0.98f, 0.98f);
-                    m_SlotBorderColor = new Color(1f, 1f, 1f, 0.16f);
-                    m_PanelShadowColor = new Color(0f, 0f, 0f, 0.45f);
-                    m_IconPlaceholderColor = new Color(0.4f, 0.44f, 0.52f, 0.9f);
-                    m_IconPlaceholderDisabledColor = new Color(0.3f, 0.33f, 0.39f, 0.78f);
-                    break;
-            }
         }
 
         public void SelectSlot(int slotIndex)
         {
-            if (slotIndex < 0 || slotIndex >= m_BuildingSlots.Count)
+            if (!TryGetSlotData(slotIndex, out BuildingSlotData slot))
             {
-                Debug.LogWarning($"Slot index {slotIndex} is out of range.", this);
                 return;
             }
 
             m_SelectedSlotIndex = slotIndex;
-            m_SelectedPrefab = m_BuildingSlots[slotIndex].buildingPrefab;
+            m_SelectedPrefab = slot.buildingPrefab;
+            UpdateSelectionVisuals();
             m_OnPrefabSelected.Invoke(m_SelectedPrefab);
             m_OnSlotSelected.Invoke(slotIndex, m_SelectedPrefab);
         }
@@ -355,30 +224,38 @@ namespace CityBuilderVR
 
         public GameObject GetSlotPrefab(int slotIndex)
         {
+            return TryGetSlotData(slotIndex, out BuildingSlotData slot) ? slot.buildingPrefab : null;
+        }
+
+        public bool TryGetSlotData(int slotIndex, out BuildingSlotData slot)
+        {
             if (slotIndex < 0 || slotIndex >= m_BuildingSlots.Count)
             {
-                return null;
+                slot = default;
+                return false;
             }
 
-            return m_BuildingSlots[slotIndex].buildingPrefab;
+            slot = m_BuildingSlots[slotIndex];
+            return true;
         }
 
         public void ClearSelection()
         {
             m_SelectedSlotIndex = -1;
             m_SelectedPrefab = null;
+            UpdateSelectionVisuals();
         }
 
         void RefreshSelectedPrefab()
         {
-            if (m_SelectedSlotIndex < 0 || m_SelectedSlotIndex >= m_BuildingSlots.Count)
+            if (!TryGetSlotData(m_SelectedSlotIndex, out BuildingSlotData slot))
             {
                 m_SelectedSlotIndex = -1;
                 m_SelectedPrefab = null;
                 return;
             }
 
-            m_SelectedPrefab = m_BuildingSlots[m_SelectedSlotIndex].buildingPrefab;
+            m_SelectedPrefab = slot.buildingPrefab;
         }
 
         void EnsureCanvas()
@@ -388,691 +265,432 @@ namespace CityBuilderVR
                 return;
             }
 
-            if (m_PanelRootOverride != null)
-            {
-                m_TargetCanvas = m_PanelRootOverride.GetComponentInParent<Canvas>();
-                if (m_TargetCanvas != null)
-                {
-                    return;
-                }
-            }
-
-            if (m_SlotsRootOverride != null)
-            {
-                m_TargetCanvas = m_SlotsRootOverride.GetComponentInParent<Canvas>();
-                if (m_TargetCanvas != null)
-                {
-                    return;
-                }
-            }
-
-            m_TargetCanvas = CreateFallbackCanvas();
-        }
-
-        Canvas CreateFallbackCanvas()
-        {
-            GameObject canvasObject = new GameObject(
-                "Building Panel Canvas",
-                typeof(RectTransform),
-                typeof(Canvas),
-                typeof(CanvasScaler),
-                typeof(GraphicRaycaster));
-
-            Canvas canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
-            canvas.worldCamera = Camera.main;
-            canvas.sortingOrder = 200;
-
-            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.dynamicPixelsPerUnit = 20f;
-            scaler.referencePixelsPerUnit = 100f;
-
-            TryAddTrackedDeviceRaycaster(canvasObject);
-
-            canvasObject.transform.SetParent(transform, false);
-
-            RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
-            canvasRect.sizeDelta = new Vector2(1200f, 900f);
-
-            Transform canvasTransform = canvasObject.transform;
-            canvasTransform.localScale = Vector3.one * Mathf.Max(0.0001f, m_FallbackCanvasScale);
-
-            Camera mainCamera = Camera.main;
-            if (mainCamera != null)
-            {
-                Transform cameraTransform = mainCamera.transform;
-                canvasTransform.position = cameraTransform.position + cameraTransform.forward * Mathf.Max(0.5f, m_FallbackCanvasDistance);
-                canvasTransform.rotation = cameraTransform.rotation;
-            }
-
-            return canvas;
-        }
-
-        void TryAddTrackedDeviceRaycaster(GameObject canvasObject)
-        {
-            Type trackedRaycasterType = Type.GetType("UnityEngine.XR.Interaction.Toolkit.UI.TrackedDeviceGraphicRaycaster, Unity.XR.Interaction.Toolkit");
-            if (trackedRaycasterType != null && canvasObject.GetComponent(trackedRaycasterType) == null)
-            {
-                canvasObject.AddComponent(trackedRaycasterType);
-            }
-        }
-
-        void EnsurePanel()
-        {
-            if (m_PanelRootOverride != null)
-            {
-                m_PanelTransform = m_PanelRootOverride;
-            }
-
-            if (m_SlotsRootOverride != null)
-            {
-                m_SlotsRoot = m_SlotsRootOverride;
-                m_SlotScrollRect = m_SlotsRoot.GetComponentInParent<ScrollRect>();
-            }
-
-            if (m_PanelTransform != null && m_SlotsRoot == null)
-            {
-                Transform slotContent = m_PanelTransform.Find("SlotScroll/Content");
-                if (slotContent != null)
-                {
-                    m_SlotsRoot = slotContent as RectTransform;
-                    m_SlotScrollRect = slotContent.GetComponentInParent<ScrollRect>();
-                }
-            }
-
-            if (m_SlotsRoot != null && m_PanelTransform == null)
-            {
-                m_PanelTransform = m_SlotsRoot.GetComponentInParent<RectTransform>();
-            }
-
-            if (m_PanelTransform != null && m_SlotsRoot != null)
-            {
-                return;
-            }
-
+            m_TargetCanvas = GetComponentInParent<Canvas>(true);
             if (m_TargetCanvas == null)
             {
-                return;
+                m_TargetCanvas = CreateFallbackCanvas();
             }
-
-            Transform existingPanel = m_TargetCanvas.transform.Find("Building Panel");
-            if (existingPanel != null)
-            {
-                m_PanelTransform = existingPanel as RectTransform;
-                Transform existingContent = existingPanel.Find("SlotScroll/Content");
-                if (existingContent != null)
-                {
-                    m_SlotsRoot = existingContent as RectTransform;
-                    m_SlotScrollRect = existingContent.GetComponentInParent<ScrollRect>();
-                    return;
-                }
-            }
-
-            CreatePanelHierarchy();
         }
 
-        void CreatePanelHierarchy()
+        bool EnsureRuntimeLayout()
         {
-            GameObject panelObject;
-            bool createdPanel = false;
-            if (m_PanelTransform != null)
+            RectTransform panelRoot = ResolvePanelRoot();
+            if (panelRoot == null)
             {
-                panelObject = m_PanelTransform.gameObject;
-                if (panelObject.transform.parent != m_TargetCanvas.transform)
-                {
-                    panelObject.transform.SetParent(m_TargetCanvas.transform, false);
-                }
+                return false;
+            }
+
+            m_PanelRootOverride = panelRoot;
+            ConfigurePanelRoot(panelRoot);
+            EnsureHeader(panelRoot);
+            EnsureScrollHierarchy(panelRoot);
+            EnsureSlotTemplate();
+
+            return m_PanelRootOverride != null && m_SlotsRootOverride != null && m_SlotTemplate != null;
+        }
+
+        RectTransform ResolvePanelRoot()
+        {
+            if (m_PanelRootOverride != null)
+            {
+                return m_PanelRootOverride;
+            }
+
+            if (TryGetComponent(out RectTransform ownRect))
+            {
+                return ownRect;
+            }
+
+            if (!m_CreateFallbackLayoutIfMissing || m_TargetCanvas == null)
+            {
+                return null;
+            }
+
+            GameObject panelRootObject = new("Building Panel Root", typeof(RectTransform));
+            panelRootObject.transform.SetParent(m_TargetCanvas.transform, false);
+            return panelRootObject.GetComponent<RectTransform>();
+        }
+
+        void ConfigurePanelRoot(RectTransform panelRoot)
+        {
+            panelRoot.anchorMin = new Vector2(0.5f, 0f);
+            panelRoot.anchorMax = new Vector2(0.5f, 0f);
+            panelRoot.pivot = new Vector2(0.5f, 0f);
+            panelRoot.sizeDelta = m_PanelSize;
+            panelRoot.anchoredPosition = m_PanelAnchorOffset;
+
+            if (!panelRoot.TryGetComponent(out Image panelImage))
+            {
+                panelImage = panelRoot.gameObject.AddComponent<Image>();
+            }
+
+            panelImage.color = m_PanelColor;
+            panelImage.raycastTarget = false;
+
+            if (!panelRoot.TryGetComponent(out VerticalLayoutGroup layout))
+            {
+                layout = panelRoot.gameObject.AddComponent<VerticalLayoutGroup>();
+            }
+
+            layout.padding = new RectOffset(16, 16, 12, 12);
+            layout.spacing = 10f;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+        }
+
+        void EnsureHeader(RectTransform panelRoot)
+        {
+            Transform header = panelRoot.Find("Header");
+            RectTransform headerRect;
+
+            if (header == null)
+            {
+                GameObject headerObject = new("Header", typeof(RectTransform), typeof(LayoutElement));
+                headerObject.transform.SetParent(panelRoot, false);
+                headerRect = headerObject.GetComponent<RectTransform>();
+
+                LayoutElement layout = headerObject.GetComponent<LayoutElement>();
+                layout.preferredHeight = 34f;
+
+                GameObject titleObject = new("Title", typeof(RectTransform), typeof(TextMeshProUGUI));
+                titleObject.transform.SetParent(headerObject.transform, false);
+
+                RectTransform titleRect = titleObject.GetComponent<RectTransform>();
+                titleRect.anchorMin = Vector2.zero;
+                titleRect.anchorMax = Vector2.one;
+                titleRect.offsetMin = Vector2.zero;
+                titleRect.offsetMax = Vector2.zero;
+
+                m_TitleLabel = titleObject.GetComponent<TextMeshProUGUI>();
             }
             else
             {
-                panelObject = new GameObject(
-                    "Building Panel",
+                headerRect = header as RectTransform;
+                m_TitleLabel = header.GetComponentInChildren<TMP_Text>(true);
+            }
+
+            if (m_TitleLabel != null)
+            {
+                m_TitleLabel.text = string.IsNullOrWhiteSpace(m_Title) ? "Buildings" : m_Title;
+                m_TitleLabel.color = m_TextColor;
+                m_TitleLabel.fontSize = 26f;
+                m_TitleLabel.alignment = TextAlignmentOptions.Center;
+            }
+
+            if (headerRect != null)
+            {
+                headerRect.SetAsFirstSibling();
+            }
+        }
+
+        void EnsureScrollHierarchy(RectTransform panelRoot)
+        {
+            if (m_SlotScrollRect == null)
+            {
+                m_SlotScrollRect = panelRoot.GetComponentInChildren<ScrollRect>(true);
+            }
+
+            if (m_SlotScrollRect == null)
+            {
+                GameObject scrollObject = new(
+                    "SlotScroll",
                     typeof(RectTransform),
                     typeof(Image),
-                    typeof(VerticalLayoutGroup));
-                panelObject.transform.SetParent(m_TargetCanvas.transform, false);
-                m_PanelTransform = panelObject.GetComponent<RectTransform>();
-                createdPanel = true;
+                    typeof(ScrollRect),
+                    typeof(LayoutElement));
+                scrollObject.transform.SetParent(panelRoot, false);
+
+                Image scrollImage = scrollObject.GetComponent<Image>();
+                scrollImage.color = Color.clear;
+                scrollImage.raycastTarget = false;
+
+                LayoutElement scrollLayout = scrollObject.GetComponent<LayoutElement>();
+                scrollLayout.preferredHeight = m_SlotSize.y + 12f;
+
+                m_SlotScrollRect = scrollObject.GetComponent<ScrollRect>();
+                m_SlotScrollRect.horizontal = true;
+                m_SlotScrollRect.vertical = false;
+                m_SlotScrollRect.movementType = ScrollRect.MovementType.Clamped;
+                m_SlotScrollRect.scrollSensitivity = 20f;
+
+                GameObject viewportObject = new("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+                viewportObject.transform.SetParent(scrollObject.transform, false);
+
+                RectTransform viewport = viewportObject.GetComponent<RectTransform>();
+                viewport.anchorMin = Vector2.zero;
+                viewport.anchorMax = Vector2.one;
+                viewport.offsetMin = Vector2.zero;
+                viewport.offsetMax = Vector2.zero;
+
+                Image viewportImage = viewportObject.GetComponent<Image>();
+                viewportImage.color = Color.clear;
+                viewportImage.raycastTarget = false;
+
+                GameObject contentObject = new(
+                    "Content",
+                    typeof(RectTransform),
+                    typeof(HorizontalLayoutGroup),
+                    typeof(ContentSizeFitter));
+                contentObject.transform.SetParent(viewportObject.transform, false);
+
+                RectTransform content = contentObject.GetComponent<RectTransform>();
+                content.anchorMin = new Vector2(0f, 0.5f);
+                content.anchorMax = new Vector2(0f, 0.5f);
+                content.pivot = new Vector2(0f, 0.5f);
+                content.anchoredPosition = Vector2.zero;
+
+                HorizontalLayoutGroup contentLayout = contentObject.GetComponent<HorizontalLayoutGroup>();
+                contentLayout.spacing = m_SlotSpacing;
+                contentLayout.padding = new RectOffset(0, 0, 0, 0);
+                contentLayout.childAlignment = TextAnchor.MiddleLeft;
+                contentLayout.childControlWidth = false;
+                contentLayout.childControlHeight = false;
+                contentLayout.childForceExpandWidth = false;
+                contentLayout.childForceExpandHeight = false;
+
+                ContentSizeFitter fitter = contentObject.GetComponent<ContentSizeFitter>();
+                fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                m_SlotScrollRect.viewport = viewport;
+                m_SlotScrollRect.content = content;
+                m_SlotsRootOverride = content;
+                return;
             }
 
-            if (!panelObject.TryGetComponent(out Image panelImage))
+            if (m_SlotsRootOverride == null)
             {
-                panelImage = panelObject.AddComponent<Image>();
+                m_SlotsRootOverride = m_SlotScrollRect.content;
             }
 
-            if (!panelObject.TryGetComponent(out VerticalLayoutGroup panelLayout))
+            if (m_SlotsRootOverride == null)
             {
-                panelLayout = panelObject.AddComponent<VerticalLayoutGroup>();
-            }
-
-            for (int i = panelObject.transform.childCount - 1; i >= 0; i--)
-            {
-                Transform child = panelObject.transform.GetChild(i);
-                if (child != null && (child.name == "Header" || child.name == "SlotScroll" || child.name == "Slots"))
+                Transform content = m_SlotScrollRect.transform.Find("Viewport/Content");
+                if (content != null)
                 {
-                    DestroyObject(child.gameObject);
-                }
-            }
-
-            m_PanelTransform = panelObject.GetComponent<RectTransform>();
-            if (createdPanel)
-            {
-                m_PanelTransform.anchorMin = new Vector2(0.5f, 0f);
-                m_PanelTransform.anchorMax = new Vector2(0.5f, 0f);
-                m_PanelTransform.pivot = new Vector2(0.5f, 0f);
-                m_PanelTransform.sizeDelta = m_PanelSize;
-                m_PanelTransform.anchoredPosition = m_PanelAnchorOffset;
-            }
-
-            panelImage.enabled = true;
-            panelImage.color = m_PanelColor;
-            ApplyRoundedImage(panelImage, true);
-
-            Shadow panelShadow = panelObject.GetComponent<Shadow>();
-            if (panelShadow == null)
-            {
-                panelShadow = panelObject.AddComponent<Shadow>();
-            }
-            panelShadow.effectColor = m_PanelShadowColor;
-            panelShadow.effectDistance = new Vector2(0f, -5f);
-            panelShadow.useGraphicAlpha = true;
-
-            panelLayout.padding = new RectOffset(14, 14, 10, 12);
-            panelLayout.spacing = 8f;
-            panelLayout.childControlWidth = true;
-            panelLayout.childControlHeight = true;
-            panelLayout.childForceExpandWidth = true;
-            panelLayout.childForceExpandHeight = false;
-
-            GameObject headerObject = new GameObject(
-                "Header",
-                typeof(RectTransform),
-                typeof(Image),
-                typeof(LayoutElement));
-            headerObject.transform.SetParent(panelObject.transform, false);
-
-            Image headerImage = headerObject.GetComponent<Image>();
-            headerImage.color = m_HeaderColor;
-            ApplyRoundedImage(headerImage, false);
-
-            LayoutElement headerLayout = headerObject.GetComponent<LayoutElement>();
-            headerLayout.preferredHeight = 52f;
-            headerLayout.flexibleHeight = 0f;
-
-            RectTransform titleTransform = CreateText("Title", headerObject.transform, m_Title, 30f, TextAlignmentOptions.Center, true);
-            titleTransform.anchorMin = Vector2.zero;
-            titleTransform.anchorMax = Vector2.one;
-            titleTransform.offsetMin = Vector2.zero;
-            titleTransform.offsetMax = Vector2.zero;
-
-            GameObject scrollObject = new GameObject(
-                "SlotScroll",
-                typeof(RectTransform),
-                typeof(Image),
-                typeof(RectMask2D),
-                typeof(ScrollRect),
-                typeof(LayoutElement));
-            scrollObject.transform.SetParent(panelObject.transform, false);
-
-            Image scrollBackground = scrollObject.GetComponent<Image>();
-            scrollBackground.color = new Color(0f, 0f, 0f, 0f);
-            scrollBackground.raycastTarget = true;
-
-            LayoutElement scrollLayout = scrollObject.GetComponent<LayoutElement>();
-            float slotItemHeight = GetSlotItemHeight();
-            scrollLayout.minHeight = slotItemHeight + 8f;
-            scrollLayout.preferredHeight = slotItemHeight + 8f;
-            scrollLayout.flexibleHeight = 0f;
-
-            RectTransform viewportRect = scrollObject.GetComponent<RectTransform>();
-            viewportRect.anchorMin = new Vector2(0f, 0f);
-            viewportRect.anchorMax = new Vector2(1f, 1f);
-            viewportRect.pivot = new Vector2(0.5f, 0.5f);
-            viewportRect.offsetMin = Vector2.zero;
-            viewportRect.offsetMax = Vector2.zero;
-
-            GameObject contentObject = new GameObject(
-                "Content",
-                typeof(RectTransform),
-                typeof(HorizontalLayoutGroup),
-                typeof(ContentSizeFitter));
-            contentObject.transform.SetParent(scrollObject.transform, false);
-            m_SlotsRoot = contentObject.GetComponent<RectTransform>();
-
-            m_SlotsRoot.anchorMin = new Vector2(0.5f, 0.5f);
-            m_SlotsRoot.anchorMax = new Vector2(0.5f, 0.5f);
-            m_SlotsRoot.pivot = new Vector2(0.5f, 0.5f);
-            m_SlotsRoot.anchoredPosition = Vector2.zero;
-            m_SlotsRoot.sizeDelta = new Vector2(0f, slotItemHeight);
-
-            HorizontalLayoutGroup horizontalLayout = contentObject.GetComponent<HorizontalLayoutGroup>();
-            horizontalLayout.padding = new RectOffset(0, 0, 0, 0);
-            horizontalLayout.spacing = m_SlotSpacing;
-            horizontalLayout.childControlWidth = false;
-            horizontalLayout.childControlHeight = false;
-            horizontalLayout.childForceExpandWidth = false;
-            horizontalLayout.childForceExpandHeight = false;
-            horizontalLayout.childAlignment = TextAnchor.MiddleCenter;
-
-            ContentSizeFitter fitter = contentObject.GetComponent<ContentSizeFitter>();
-            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            m_SlotScrollRect = scrollObject.GetComponent<ScrollRect>();
-            m_SlotScrollRect.viewport = viewportRect;
-            m_SlotScrollRect.content = m_SlotsRoot;
-            m_SlotScrollRect.horizontal = true;
-            m_SlotScrollRect.vertical = false;
-            m_SlotScrollRect.movementType = ScrollRect.MovementType.Clamped;
-            m_SlotScrollRect.inertia = true;
-            m_SlotScrollRect.decelerationRate = 0.135f;
-            m_SlotScrollRect.scrollSensitivity = 20f;
-
-            ApplySlotLayoutSettings();
-        }
-
-        void ApplySlotLayoutSettings()
-        {
-            float slotItemHeight = GetSlotItemHeight();
-
-            if (m_SlotsRoot != null)
-            {
-                HorizontalLayoutGroup horizontalLayout = m_SlotsRoot.GetComponent<HorizontalLayoutGroup>();
-                if (horizontalLayout != null)
-                {
-                    horizontalLayout.spacing = m_SlotSpacing;
-                }
-
-                m_SlotsRoot.sizeDelta = new Vector2(m_SlotsRoot.sizeDelta.x, slotItemHeight);
-            }
-
-            if (m_SlotScrollRect != null)
-            {
-                LayoutElement scrollLayout = m_SlotScrollRect.GetComponent<LayoutElement>();
-                if (scrollLayout != null)
-                {
-                    scrollLayout.minHeight = slotItemHeight + 8f;
-                    scrollLayout.preferredHeight = slotItemHeight + 8f;
-                    scrollLayout.flexibleHeight = 0f;
+                    m_SlotsRootOverride = content as RectTransform;
+                    m_SlotScrollRect.content = m_SlotsRootOverride;
                 }
             }
         }
 
-        float GetSlotLabelHeight()
+        void EnsureSlotTemplate()
         {
-            return Mathf.Clamp(m_SlotSize.y * 0.28f, 20f, 34f);
-        }
-
-        float GetSlotLabelGap()
-        {
-            return Mathf.Clamp(m_SlotSize.y * 0.1f, 6f, 12f);
-        }
-
-        float GetSlotItemHeight()
-        {
-            return m_SlotSize.y + GetSlotLabelGap() + GetSlotLabelHeight();
-        }
-
-        RectTransform CreateSlotItemContainer(int index)
-        {
-            GameObject containerObject = new GameObject(
-                $"SlotItem_{index + 1}",
-                typeof(RectTransform),
-                typeof(LayoutElement));
-            containerObject.transform.SetParent(m_SlotsRoot, false);
-            m_RuntimeSlotObjects.Add(containerObject);
-
-            RectTransform containerTransform = containerObject.GetComponent<RectTransform>();
-            float itemHeight = GetSlotItemHeight();
-            containerTransform.sizeDelta = new Vector2(m_SlotSize.x, itemHeight);
-
-            LayoutElement containerLayout = containerObject.GetComponent<LayoutElement>();
-            containerLayout.preferredWidth = m_SlotSize.x;
-            containerLayout.preferredHeight = itemHeight;
-            containerLayout.flexibleWidth = 0f;
-            containerLayout.flexibleHeight = 0f;
-            return containerTransform;
-        }
-
-        void CreateSlotLabel(RectTransform parent, string displayName)
-        {
-            float labelHeight = GetSlotLabelHeight();
-            RectTransform labelTransform = CreateText(
-                "Label",
-                parent,
-                displayName,
-                Mathf.Clamp(m_SlotSize.y * 0.22f, 14f, 20f),
-                TextAlignmentOptions.Midline,
-                true);
-            labelTransform.anchorMin = new Vector2(0f, 0f);
-            labelTransform.anchorMax = new Vector2(1f, 0f);
-            labelTransform.pivot = new Vector2(0.5f, 0f);
-            labelTransform.anchoredPosition = Vector2.zero;
-            labelTransform.sizeDelta = new Vector2(-8f, labelHeight);
-        }
-
-        void ConfigureSlotOutline(GameObject targetObject, bool interactable)
-        {
-            if (targetObject == null)
+            if (m_SlotsRootOverride == null)
             {
                 return;
             }
 
-            Outline slotOutline = targetObject.GetComponent<Outline>();
-            if (slotOutline == null)
+            if (m_SlotTemplate == null)
             {
-                slotOutline = targetObject.AddComponent<Outline>();
+                BuildingSlotVisualRefs existingTemplate = m_SlotsRootOverride.GetComponentInChildren<BuildingSlotVisualRefs>(true);
+                if (existingTemplate != null)
+                {
+                    m_SlotTemplate = existingTemplate;
+                }
             }
 
-            slotOutline.effectColor = interactable
-                ? m_SlotBorderColor
-                : new Color(m_SlotBorderColor.r, m_SlotBorderColor.g, m_SlotBorderColor.b, m_SlotBorderColor.a * 0.6f);
-
-            float borderThickness = Mathf.Max(0.5f, m_SlotBorderThickness);
-            slotOutline.effectDistance = new Vector2(borderThickness, -borderThickness);
-            slotOutline.useGraphicAlpha = true;
-        }
-
-        void CreateSlotButton(string displayName, Sprite icon, int index, bool interactable)
-        {
-            if (m_SlotTemplate != null)
+            if (m_SlotTemplate == null)
             {
-                CreateSlotFromTemplate(displayName, icon, index, interactable);
+                m_SlotTemplate = CreateSlotTemplate(m_SlotsRootOverride);
+            }
+
+            if (m_SlotTemplate == null)
+            {
                 return;
             }
 
-            RectTransform containerTransform = CreateSlotItemContainer(index);
-            GameObject slotObject = new GameObject(
-                $"Slot_{index + 1}",
+            m_SlotTemplate.AutoWire();
+            m_SlotTemplate.gameObject.SetActive(false);
+        }
+
+        BuildingSlotVisualRefs CreateSlotTemplate(RectTransform parent)
+        {
+            GameObject slotObject = new(
+                "SlotTemplate",
                 typeof(RectTransform),
                 typeof(LayoutElement),
                 typeof(Image),
-                typeof(Button));
-            slotObject.transform.SetParent(containerTransform, false);
+                typeof(Button),
+                typeof(CanvasGroup),
+                typeof(VerticalLayoutGroup),
+                typeof(BuildingSlotVisualRefs));
+            slotObject.transform.SetParent(parent, false);
+            slotObject.SetActive(false);
 
-            RectTransform slotTransform = slotObject.GetComponent<RectTransform>();
-            slotTransform.anchorMin = new Vector2(0.5f, 1f);
-            slotTransform.anchorMax = new Vector2(0.5f, 1f);
-            slotTransform.pivot = new Vector2(0.5f, 1f);
-            slotTransform.anchoredPosition = Vector2.zero;
-            slotTransform.sizeDelta = m_SlotSize;
+            RectTransform rect = slotObject.GetComponent<RectTransform>();
+            rect.sizeDelta = m_SlotSize;
 
-            LayoutElement slotLayout = slotObject.GetComponent<LayoutElement>();
-            slotLayout.preferredWidth = m_SlotSize.x;
-            slotLayout.preferredHeight = m_SlotSize.y;
-            slotLayout.flexibleWidth = 0f;
-            slotLayout.flexibleHeight = 0f;
+            LayoutElement layoutElement = slotObject.GetComponent<LayoutElement>();
+            layoutElement.preferredWidth = m_SlotSize.x;
+            layoutElement.preferredHeight = m_SlotSize.y;
 
-            Image slotImage = slotObject.GetComponent<Image>();
-            slotImage.color = interactable ? m_SlotColor : m_SlotDisabledColor;
-            ApplyRoundedImage(slotImage, false);
-            ConfigureSlotOutline(slotObject, interactable);
+            VerticalLayoutGroup layout = slotObject.GetComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(8, 8, 8, 8);
+            layout.spacing = 6f;
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
 
-            Button slotButton = slotObject.GetComponent<Button>();
-            slotButton.targetGraphic = slotImage;
-            slotButton.interactable = interactable;
-            m_RuntimeButtons.Add(slotButton);
+            Image background = slotObject.GetComponent<Image>();
+            background.color = m_SlotColor;
 
-            if (interactable)
-            {
-                int capturedIndex = index;
-                slotButton.onClick.AddListener(delegate { SelectSlot(capturedIndex); });
-            }
+            Button button = slotObject.GetComponent<Button>();
+            button.targetGraphic = background;
 
-            GameObject iconObject = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            GameObject iconObject = new("Icon", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
             iconObject.transform.SetParent(slotObject.transform, false);
-            RectTransform iconRect = iconObject.GetComponent<RectTransform>();
-            float iconPadding = Mathf.Clamp(m_SlotSize.x * 0.14f, 6f, 12f);
-            float iconSize = Mathf.Clamp(
-                Mathf.Min(m_SlotSize.x, m_SlotSize.y) - (iconPadding * 2f),
-                18f,
-                m_SlotSize.x - (iconPadding * 2f));
 
-            iconRect.anchorMin = new Vector2(0.5f, 0.5f);
-            iconRect.anchorMax = new Vector2(0.5f, 0.5f);
-            iconRect.pivot = new Vector2(0.5f, 0.5f);
-            iconRect.anchoredPosition = Vector2.zero;
-            iconRect.sizeDelta = new Vector2(iconSize, iconSize);
+            Image icon = iconObject.GetComponent<Image>();
+            icon.preserveAspect = true;
 
-            Image iconImage = iconObject.GetComponent<Image>();
-            ApplySlotIcon(iconImage, icon, interactable);
+            LayoutElement iconLayout = iconObject.GetComponent<LayoutElement>();
+            iconLayout.preferredWidth = m_SlotSize.x - 20f;
+            iconLayout.preferredHeight = m_SlotSize.y - 46f;
 
-            CreateSlotLabel(containerTransform, displayName);
+            GameObject labelObject = new("Label", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
+            labelObject.transform.SetParent(slotObject.transform, false);
+
+            TMP_Text label = labelObject.GetComponent<TMP_Text>();
+            label.fontSize = 18f;
+            label.alignment = TextAlignmentOptions.Center;
+            label.enableWordWrapping = false;
+            label.overflowMode = TextOverflowModes.Ellipsis;
+
+            LayoutElement labelLayout = labelObject.GetComponent<LayoutElement>();
+            labelLayout.preferredHeight = 24f;
+
+            BuildingSlotVisualRefs refs = slotObject.GetComponent<BuildingSlotVisualRefs>();
+            refs.button = button;
+            refs.label = label;
+            refs.icon = icon;
+            refs.background = background;
+            refs.canvasGroup = slotObject.GetComponent<CanvasGroup>();
+            refs.layoutElement = layoutElement;
+            return refs;
         }
 
-        void CreateSlotFromTemplate(string displayName, Sprite icon, int index, bool interactable)
+        void CreateRuntimeSlot(BuildingSlotData slot, int index, bool interactable)
         {
-            RectTransform containerTransform = CreateSlotItemContainer(index);
-            BuildingSlotVisualRefs slotRefs = Instantiate(m_SlotTemplate, containerTransform);
-            slotRefs.gameObject.name = $"Slot_{index + 1}";
-            slotRefs.gameObject.SetActive(true);
-            RectTransform slotTransform = slotRefs.GetComponent<RectTransform>();
-            if (slotTransform != null)
-            {
-                slotTransform.anchorMin = new Vector2(0.5f, 1f);
-                slotTransform.anchorMax = new Vector2(0.5f, 1f);
-                slotTransform.pivot = new Vector2(0.5f, 1f);
-                slotTransform.anchoredPosition = Vector2.zero;
-                slotTransform.sizeDelta = m_SlotSize;
-            }
-
-            LayoutElement slotLayout = slotRefs.GetComponent<LayoutElement>();
-            if (slotLayout == null)
-            {
-                slotLayout = slotRefs.gameObject.AddComponent<LayoutElement>();
-            }
-            slotLayout.preferredWidth = m_SlotSize.x;
-            slotLayout.preferredHeight = m_SlotSize.y;
-            slotLayout.flexibleWidth = 0f;
-            slotLayout.flexibleHeight = 0f;
-
-            Button slotButton = slotRefs.button != null ? slotRefs.button : slotRefs.GetComponent<Button>();
-            if (slotButton != null)
-            {
-                slotButton.interactable = interactable;
-                m_RuntimeButtons.Add(slotButton);
-
-                if (interactable)
-                {
-                    int capturedIndex = index;
-                    slotButton.onClick.AddListener(delegate { SelectSlot(capturedIndex); });
-                }
-            }
-
-            if (slotRefs.label != null)
-            {
-                slotRefs.label.gameObject.SetActive(false);
-            }
-
-            if (slotRefs.icon != null)
-            {
-                ApplySlotIcon(slotRefs.icon, icon, interactable);
-            }
-
-            if (slotRefs.background != null)
-            {
-                slotRefs.background.color = interactable ? m_SlotColor : m_SlotDisabledColor;
-                ApplyRoundedImage(slotRefs.background, false);
-            }
-
-            GameObject outlineTarget = slotRefs.background != null ? slotRefs.background.gameObject : slotRefs.gameObject;
-            ConfigureSlotOutline(outlineTarget, interactable);
-
-            CreateSlotLabel(containerTransform, displayName);
-        }
-
-        void ApplyRoundedImage(Image image, bool panelStyle)
-        {
-            if (!m_UseRoundedStyle || image == null)
+            if (m_SlotTemplate == null || m_SlotsRootOverride == null)
             {
                 return;
             }
 
-            Sprite roundedSprite = panelStyle
-                ? GetRoundedSprite(ref m_PanelRoundedSprite, 128, m_PanelCornerRadius, "PanelRoundedSprite")
-                : GetRoundedSprite(ref m_SlotRoundedSprite, 96, m_SlotCornerRadius, "SlotRoundedSprite");
+            BuildingSlotVisualRefs runtimeSlot = Instantiate(m_SlotTemplate, m_SlotsRootOverride);
+            runtimeSlot.gameObject.name = $"Slot_{index + 1}";
+            runtimeSlot.gameObject.SetActive(true);
+            runtimeSlot.AutoWire();
 
-            if (roundedSprite == null)
+            if (runtimeSlot.layoutElement != null)
             {
-                return;
+                runtimeSlot.layoutElement.preferredWidth = m_SlotSize.x;
+                runtimeSlot.layoutElement.preferredHeight = m_SlotSize.y;
             }
 
-            image.sprite = roundedSprite;
-            image.type = Image.Type.Sliced;
-            image.pixelsPerUnitMultiplier = 1f;
-        }
+            int capturedIndex = index;
+            runtimeSlot.Configure(
+                ResolveSlotName(slot, index),
+                ResolveSlotIcon(slot),
+                interactable,
+                capturedIndex == m_SelectedSlotIndex,
+                m_SlotColor,
+                m_SelectedSlotColor,
+                m_DisabledSlotColor,
+                m_TextColor,
+                () => SelectSlot(capturedIndex));
 
-        void ApplySlotIcon(Image iconImage, Sprite icon, bool interactable)
-        {
-            if (iconImage == null)
-            {
-                return;
-            }
-
-            if (icon != null)
-            {
-                iconImage.sprite = icon;
-                iconImage.type = Image.Type.Simple;
-                iconImage.preserveAspect = true;
-                iconImage.color = Color.white;
-                iconImage.enabled = true;
-                return;
-            }
-
-            iconImage.sprite = GetRoundedSprite(ref m_IconRoundedSprite, 64, 14, "SlotIconRoundedSprite");
-            iconImage.type = Image.Type.Sliced;
-            iconImage.preserveAspect = false;
-            iconImage.color = interactable ? m_IconPlaceholderColor : m_IconPlaceholderDisabledColor;
-            iconImage.enabled = true;
-        }
-
-        Sprite GetRoundedSprite(ref Sprite cache, int textureSize, int cornerRadius, string spriteName)
-        {
-            if (cache != null)
-            {
-                return cache;
-            }
-
-            textureSize = Mathf.Max(16, textureSize);
-            int safeRadius = Mathf.Clamp(cornerRadius, 2, (textureSize / 2) - 1);
-
-            Texture2D texture = new Texture2D(textureSize, textureSize, TextureFormat.ARGB32, false);
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Bilinear;
-            texture.name = $"{spriteName}_Tex";
-
-            Color32[] pixels = new Color32[textureSize * textureSize];
-            float min = safeRadius;
-            float max = (textureSize - 1) - safeRadius;
-
-            for (int y = 0; y < textureSize; y++)
-            {
-                float fy = y + 0.5f;
-                for (int x = 0; x < textureSize; x++)
-                {
-                    float fx = x + 0.5f;
-                    float cx = Mathf.Clamp(fx, min, max);
-                    float cy = Mathf.Clamp(fy, min, max);
-
-                    float dx = fx - cx;
-                    float dy = fy - cy;
-                    float distance = Mathf.Sqrt((dx * dx) + (dy * dy));
-                    float alpha = Mathf.Clamp01((safeRadius + 0.5f) - distance);
-                    byte alphaByte = (byte)Mathf.RoundToInt(alpha * 255f);
-
-                    pixels[(y * textureSize) + x] = new Color32(255, 255, 255, alphaByte);
-                }
-            }
-
-            texture.SetPixels32(pixels);
-            texture.Apply(false, false);
-
-            cache = Sprite.Create(
-                texture,
-                new Rect(0f, 0f, textureSize, textureSize),
-                new Vector2(0.5f, 0.5f),
-                textureSize,
-                0,
-                SpriteMeshType.FullRect,
-                new Vector4(safeRadius, safeRadius, safeRadius, safeRadius),
-                false);
-
-            cache.name = spriteName;
-            return cache;
-        }
-
-        RectTransform CreateText(string objectName, Transform parent, string textValue, float fontSize, TextAlignmentOptions alignment, bool useBold = false)
-        {
-            GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(TextMeshProUGUI));
-            textObject.transform.SetParent(parent, false);
-
-            RectTransform textTransform = textObject.GetComponent<RectTransform>();
-            textTransform.anchorMin = new Vector2(0f, 0.5f);
-            textTransform.anchorMax = new Vector2(1f, 0.5f);
-            textTransform.pivot = new Vector2(0.5f, 0.5f);
-            textTransform.sizeDelta = new Vector2(0f, 32f);
-
-            TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
-            text.text = textValue;
-            text.fontSize = fontSize;
-            text.alignment = alignment;
-            text.fontStyle = useBold ? FontStyles.Bold : FontStyles.Normal;
-            text.enableWordWrapping = false;
-            text.overflowMode = TextOverflowModes.Ellipsis;
-            text.color = m_TextColor;
-            if (TMP_Settings.defaultFontAsset != null)
-            {
-                text.font = TMP_Settings.defaultFontAsset;
-            }
-
-            return textTransform;
+            m_RuntimeSlots.Add(runtimeSlot);
         }
 
         void ClearRuntimeSlots()
         {
-            for (int i = 0; i < m_RuntimeButtons.Count; i++)
+            for (int i = 0; i < m_RuntimeSlots.Count; i++)
             {
-                if (m_RuntimeButtons[i] != null)
+                if (m_RuntimeSlots[i] != null)
                 {
-                    m_RuntimeButtons[i].onClick.RemoveAllListeners();
+                    DestroyObject(m_RuntimeSlots[i].gameObject);
                 }
             }
 
-            m_RuntimeButtons.Clear();
+            m_RuntimeSlots.Clear();
 
-            for (int i = 0; i < m_RuntimeSlotObjects.Count; i++)
-            {
-                DestroyObject(m_RuntimeSlotObjects[i]);
-            }
-            m_RuntimeSlotObjects.Clear();
-        }
-
-        void RefreshScrollState()
-        {
-            if (m_SlotScrollRect == null || m_SlotsRoot == null)
+            if (m_SlotsRootOverride == null)
             {
                 return;
             }
 
-            LayoutRebuilder.ForceRebuildLayoutImmediate(m_SlotsRoot);
-            RectTransform viewport = m_SlotScrollRect.viewport != null ? m_SlotScrollRect.viewport : m_SlotScrollRect.GetComponent<RectTransform>();
+            Transform templateTransform = m_SlotTemplate != null ? m_SlotTemplate.transform : null;
+            for (int i = m_SlotsRootOverride.childCount - 1; i >= 0; i--)
+            {
+                Transform child = m_SlotsRootOverride.GetChild(i);
+                if (child == templateTransform)
+                {
+                    continue;
+                }
+
+                if (child.GetComponent<BuildingSlotVisualRefs>() != null)
+                {
+                    DestroyObject(child.gameObject);
+                }
+            }
+        }
+
+        void UpdateSelectionVisuals()
+        {
+            for (int i = 0; i < m_RuntimeSlots.Count; i++)
+            {
+                BuildingSlotVisualRefs slot = m_RuntimeSlots[i];
+                if (slot == null)
+                {
+                    continue;
+                }
+
+                bool selected = i == m_SelectedSlotIndex;
+                bool interactable = slot.button == null || slot.button.interactable;
+                int slotIndex = i;
+                slot.Configure(
+                    slot.label != null ? slot.label.text : $"Slot {i + 1}",
+                    slot.icon != null ? slot.icon.sprite : null,
+                    interactable,
+                    selected,
+                    m_SlotColor,
+                    m_SelectedSlotColor,
+                    m_DisabledSlotColor,
+                    m_TextColor,
+                    slot.button != null && interactable ? (() => SelectSlot(slotIndex)) : null);
+            }
+        }
+
+        void RefreshScrollState()
+        {
+            if (m_SlotScrollRect == null || m_SlotsRootOverride == null)
+            {
+                return;
+            }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(m_SlotsRootOverride);
+
+            RectTransform viewport = m_SlotScrollRect.viewport != null
+                ? m_SlotScrollRect.viewport
+                : m_SlotScrollRect.GetComponent<RectTransform>();
+
             if (viewport == null)
             {
                 return;
             }
 
-            float contentWidth = m_SlotsRoot.rect.width;
-            float viewportWidth = viewport.rect.width;
-            bool shouldScroll = contentWidth > viewportWidth + 0.5f;
-
+            bool shouldScroll = m_SlotsRootOverride.rect.width > viewport.rect.width + 0.5f;
             m_SlotScrollRect.horizontal = shouldScroll;
-            if (shouldScroll)
+
+            if (!shouldScroll)
             {
-                m_SlotScrollRect.horizontalNormalizedPosition = 0.5f;
-            }
-            else
-            {
-                m_SlotsRoot.anchoredPosition = Vector2.zero;
+                m_SlotsRootOverride.anchoredPosition = Vector2.zero;
             }
         }
 
@@ -1133,26 +751,110 @@ namespace CityBuilderVR
                 return null;
             }
 
-            Sprite previewSprite;
-            try
-            {
-                previewSprite = Sprite.Create(
-                    previewTexture,
-                    new Rect(0f, 0f, previewTexture.width, previewTexture.height),
-                    new Vector2(0.5f, 0.5f),
-                    100f);
-            }
-            catch
-            {
-                return null;
-            }
-
+            Sprite previewSprite = Sprite.Create(
+                previewTexture,
+                new Rect(0f, 0f, previewTexture.width, previewTexture.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
             previewSprite.name = $"Preview_{slot.buildingPrefab.name}";
             m_EditorPrefabIconCache[prefabId] = previewSprite;
             return previewSprite;
 #else
             return null;
 #endif
+        }
+
+        Canvas CreateFallbackCanvas()
+        {
+            GameObject canvasObject = new(
+                "Building Panel Canvas",
+                typeof(RectTransform),
+                typeof(Canvas),
+                typeof(CanvasScaler),
+                typeof(GraphicRaycaster));
+            canvasObject.transform.SetParent(transform, false);
+
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.worldCamera = Camera.main;
+            canvas.sortingOrder = 200;
+
+            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.dynamicPixelsPerUnit = 20f;
+            scaler.referencePixelsPerUnit = 100f;
+
+            RectTransform rect = canvasObject.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(1400f, 900f);
+            rect.localScale = Vector3.one * Mathf.Max(0.0001f, m_FallbackCanvasScale);
+
+            Camera mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                rect.position = mainCamera.transform.position + mainCamera.transform.forward * Mathf.Max(0.5f, m_FallbackCanvasDistance);
+                rect.rotation = mainCamera.transform.rotation;
+            }
+
+            return canvas;
+        }
+
+        Transform ResolveFollowTarget()
+        {
+            if (m_FollowTargetOverride != null)
+            {
+                return m_FollowTargetOverride;
+            }
+
+            if (m_TargetCanvas != null && m_TargetCanvas.worldCamera != null)
+            {
+                return m_TargetCanvas.worldCamera.transform;
+            }
+
+            Camera mainCamera = Camera.main;
+            return mainCamera != null ? mainCamera.transform : null;
+        }
+
+        void FollowCanvasToPlayer()
+        {
+            if (!Application.isPlaying ||
+                !m_FollowPlayerInWorldSpace ||
+                m_TargetCanvas == null ||
+                m_TargetCanvas.renderMode != RenderMode.WorldSpace)
+            {
+                return;
+            }
+
+            RectTransform canvasRect = m_TargetCanvas.GetComponent<RectTransform>();
+            Transform followTarget = ResolveFollowTarget();
+            if (canvasRect == null || followTarget == null)
+            {
+                return;
+            }
+
+            UpdateFollowOffsets(canvasRect, followTarget);
+            canvasRect.position = followTarget.TransformPoint(m_RuntimeFollowLocalPositionOffset);
+            canvasRect.rotation = followTarget.rotation * m_RuntimeFollowLocalRotationOffset;
+        }
+
+        void UpdateFollowOffsets(RectTransform canvasRect, Transform followTarget)
+        {
+            if (m_FollowOffsetInitialized && m_LastFollowTarget == followTarget)
+            {
+                return;
+            }
+
+            if (m_UseCurrentOffsetAsFollowOffset)
+            {
+                m_RuntimeFollowLocalPositionOffset = followTarget.InverseTransformPoint(canvasRect.position);
+                m_RuntimeFollowLocalRotationOffset = Quaternion.Inverse(followTarget.rotation) * canvasRect.rotation;
+            }
+            else
+            {
+                m_RuntimeFollowLocalPositionOffset = m_FollowLocalPositionOffset;
+                m_RuntimeFollowLocalRotationOffset = Quaternion.Euler(m_FollowLocalEulerOffset);
+            }
+
+            m_LastFollowTarget = followTarget;
+            m_FollowOffsetInitialized = true;
         }
 
         void DestroyObject(GameObject target)
@@ -1165,63 +867,24 @@ namespace CityBuilderVR
             if (Application.isPlaying)
             {
                 Destroy(target);
-                return;
             }
-
-            DestroyImmediate(target);
-        }
-
-        void PrepareSlotTemplate()
-        {
-            if (m_SlotTemplate == null)
+            else
             {
-                return;
-            }
-
-            bool templateIsSceneObject = m_SlotTemplate.gameObject.scene.IsValid();
-            if (m_HideTemplateOnRuntime && templateIsSceneObject && Application.isPlaying && m_SlotTemplate.gameObject.activeSelf)
-            {
-                m_SlotTemplate.gameObject.SetActive(false);
+                DestroyImmediate(target);
             }
         }
 
 #if UNITY_EDITOR
         void OnValidate()
         {
-            if (m_UseQuickPrefabList && m_AutoSyncSlotsFromQuickList)
-            {
-                SyncSlotsFromQuickPrefabList();
-            }
-
-            for (int i = 0; i < m_BuildingSlots.Count; i++)
-            {
-                BuildingSlotData slot = m_BuildingSlots[i];
-                if (string.IsNullOrWhiteSpace(slot.slotName) && slot.buildingPrefab != null)
-                {
-                    slot.slotName = slot.buildingPrefab.name;
-                    m_BuildingSlots[i] = slot;
-                }
-            }
-
-            m_Columns = Mathf.Max(1, m_Columns);
             m_EmptySlotCount = Mathf.Max(1, m_EmptySlotCount);
-            m_FallbackCanvasScale = Mathf.Max(0.0001f, m_FallbackCanvasScale);
-            m_FallbackCanvasDistance = Mathf.Max(0.5f, m_FallbackCanvasDistance);
-            m_PanelSize = new Vector2(Mathf.Max(320f, m_PanelSize.x), Mathf.Max(120f, m_PanelSize.y));
+            m_SlotSpacing = Mathf.Max(0f, m_SlotSpacing);
+            m_PanelSize.x = Mathf.Max(320f, m_PanelSize.x);
+            m_PanelSize.y = Mathf.Max(120f, m_PanelSize.y);
             float slotSide = Mathf.Max(72f, Mathf.Min(m_SlotSize.x, m_SlotSize.y));
             m_SlotSize = new Vector2(slotSide, slotSide);
-            m_SlotSpacing = Mathf.Max(0f, m_SlotSpacing);
-            m_PanelCornerRadius = Mathf.Max(4, m_PanelCornerRadius);
-            m_SlotCornerRadius = Mathf.Max(4, m_SlotCornerRadius);
-            m_SlotBorderThickness = Mathf.Max(0.5f, m_SlotBorderThickness);
-            ApplyThemePreset();
-            ApplySlotLayoutSettings();
-            RefreshSelectedPrefab();
-            m_FollowOffsetInitialized = false;
-            m_LastFollowTarget = null;
-            m_PanelRoundedSprite = null;
-            m_SlotRoundedSprite = null;
-            m_IconRoundedSprite = null;
+            m_FallbackCanvasScale = Mathf.Max(0.0001f, m_FallbackCanvasScale);
+            m_FallbackCanvasDistance = Mathf.Max(0.5f, m_FallbackCanvasDistance);
         }
 #endif
     }
