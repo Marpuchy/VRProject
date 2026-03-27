@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c64d31c46a9d05f9d927a33e541a00a8, type: 3}
+  m_Name: GameBalance
+  m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.GameBalanceSO
+  m_TickIntervalSeconds: 2
+  m_StartingMoney: 1800
+  m_StartingPopulation: 0
+  m_StartingHappiness: 72
+  m_StartingExperience: 0
+  m_TaxIncomePerCitizenPerTick: 0.6
+  m_PopulationGrowthPerTick: 1
+  m_PopulationDeclinePerTick: 0.6
+  m_NewHousingInitialOccupancy: 0.35
+  m_MinPopulationPerNewHousing: 1
+  m_StableTickExperience: 1
+  m_GrowthTickExperienceBonus: 1
+  m_BaseHappiness: 68
+  m_MaxHappiness: 100
+  m_HappinessChangePerTick: 4
+  m_GrowthHappinessThreshold: 58
+  m_LowHappinessThreshold: 28
+  m_NegativeBalanceHappinessPenalty: 12
+  m_FullHousingPenalty: 6
+  m_MinimumCoverageForGrowth: 0.88
+  m_GameOverGraceSeconds: 14
+  m_TrackedResources:
+  - {fileID: 11400000, guid: 70b7723ebe8918e0f9a2cb4a481ef412, type: 2}
+  - {fileID: 11400000, guid: cc66777299ad0453bbd79c595e656e57, type: 2}
+  - {fileID: 11400000, guid: 3231e8aeb7a5a1caf8c06467907cfd9d, type: 2}
+  - {fileID: 11400000, guid: 295909e91f0de38a29d1de714d10e9f2, type: 2}
+  m_ResourceHappinessWeights:
+  - resourceType: {fileID: 11400000, guid: 70b7723ebe8918e0f9a2cb4a481ef412, type: 2}
+    deficitPenalty: 22
+    surplusBonus: 2
+  - resourceType: {fileID: 11400000, guid: cc66777299ad0453bbd79c595e656e57, type: 2}
+    deficitPenalty: 22
+    surplusBonus: 2
+  - resourceType: {fileID: 11400000, guid: 3231e8aeb7a5a1caf8c06467907cfd9d, type: 2}
+    deficitPenalty: 14
+    surplusBonus: 3
+  - resourceType: {fileID: 11400000, guid: 295909e91f0de38a29d1de714d10e9f2, type: 2}
+    deficitPenalty: 8
+    surplusBonus: 5

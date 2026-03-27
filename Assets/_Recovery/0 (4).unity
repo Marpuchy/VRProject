@@ -503,9 +503,6 @@ MonoBehaviour:
   m_HappinessText: {fileID: 567871459}
   m_LevelText: {fileID: 1578758274}
   m_ResourcesText: {fileID: 349624013}
-  m_AutoResolveMissingTextReferences: 1
-  m_ClampTextInsideParentRect: 1
-  m_TextClampPadding: 14
 --- !u!114 &341859030
 MonoBehaviour:
   m_ObjectHideFlags: 0
