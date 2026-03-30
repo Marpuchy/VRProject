@@ -18,14 +18,25 @@ namespace CityBuilderVR
         [SerializeField] bool m_AutoResolveMissingTextReferences = true;
         [SerializeField] bool m_ClampTextInsideParentRect = true;
         [SerializeField, Min(0f)] float m_TextClampPadding = 14f;
+        [Header("VR HUD Follow")]
+        [SerializeField] bool m_PinHudToPlayerEyes = true;
+        [SerializeField] bool m_UseWorldSpaceCanvas = true;
+        [SerializeField] Vector2 m_WorldCanvasSize = new(1200f, 380f);
+        [SerializeField, Min(0.0001f)] float m_WorldCanvasScale = 0.0012f;
+        [SerializeField] Vector3 m_EyeLocalPositionOffset = new(0f, -0.1f, 0.62f);
+        [SerializeField] Vector3 m_EyeLocalEulerOffset = Vector3.zero;
 
         readonly StringBuilder m_StringBuilder = new();
+        Canvas m_HudCanvas;
+        Camera m_MainCamera;
+        Transform m_EyeAnchor;
 
         void Awake()
         {
             ResolveSimulationController();
             ResolveMissingTextReferences();
             NormalizeTextVisibilityAndLayout();
+            TryAttachHudToPlayerEyes();
         }
 
         void OnEnable()
@@ -33,6 +44,7 @@ namespace CityBuilderVR
             ResolveSimulationController();
             ResolveMissingTextReferences();
             NormalizeTextVisibilityAndLayout();
+            TryAttachHudToPlayerEyes();
 
             if (m_CityStateChangedEvent != null)
             {
@@ -44,6 +56,11 @@ namespace CityBuilderVR
             }
 
             m_SimulationController?.PublishCurrentState();
+        }
+
+        void LateUpdate()
+        {
+            TryAttachHudToPlayerEyes();
         }
 
         void OnDisable()
@@ -180,6 +197,61 @@ namespace CityBuilderVR
             m_HappinessText ??= FindTextByName("happiness");
             m_LevelText ??= FindTextByName("level", "xp");
             m_ResourcesText ??= FindTextByName("resources", "resource");
+        }
+
+        void TryAttachHudToPlayerEyes()
+        {
+            if (!Application.isPlaying || !m_PinHudToPlayerEyes)
+            {
+                return;
+            }
+
+            m_HudCanvas ??= GetComponentInParent<Canvas>();
+            if (m_HudCanvas == null)
+            {
+                return;
+            }
+
+            if (m_MainCamera == null)
+            {
+                m_MainCamera = Camera.main;
+            }
+
+            if (m_MainCamera == null)
+            {
+                return;
+            }
+
+            m_EyeAnchor = m_MainCamera.transform;
+            if (m_UseWorldSpaceCanvas)
+            {
+                m_HudCanvas.renderMode = RenderMode.WorldSpace;
+            }
+            else
+            {
+                m_HudCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            }
+
+            m_HudCanvas.worldCamera = m_MainCamera;
+
+            RectTransform canvasRect = m_HudCanvas.transform as RectTransform;
+            if (canvasRect == null)
+            {
+                return;
+            }
+
+            if (canvasRect.parent != m_EyeAnchor)
+            {
+                canvasRect.SetParent(m_EyeAnchor, false);
+            }
+
+            canvasRect.anchorMin = new Vector2(0.5f, 0.5f);
+            canvasRect.anchorMax = new Vector2(0.5f, 0.5f);
+            canvasRect.pivot = new Vector2(0.5f, 0.5f);
+            canvasRect.sizeDelta = m_WorldCanvasSize;
+            canvasRect.localPosition = m_EyeLocalPositionOffset;
+            canvasRect.localRotation = Quaternion.Euler(m_EyeLocalEulerOffset);
+            canvasRect.localScale = Vector3.one * m_WorldCanvasScale;
         }
 
         TMP_Text FindTextByName(params string[] tokens)
