@@ -1285,52 +1285,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c53aa8514be0f21288177d25dded8d2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridDefinition
---- !u!1 &1219759449
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1219759451}
-  - component: {fileID: 1219759450}
-  m_Layer: 0
-  m_Name: DayNightController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1219759450
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1219759449}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6b238e9f7fc0cd0e82b4f7784fb7538, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DayNightController
-  directionalLight: {fileID: 787182061}
-  config: {fileID: 11400000, guid: 1d619e124add6708d810ce9dea817a71, type: 2}
---- !u!4 &1219759451
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1219759449}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -3.9143503, y: 0, z: -3.0468102}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2035941040}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1269791852 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8383550644803842697, guid: 77ac6b10722bcca4a8baf70e44d89e78,
@@ -1886,7 +1840,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameBootstrap
   config: {fileID: 11400000, guid: 1d619e124add6708d810ce9dea817a71, type: 2}
-  controller: {fileID: 1219759450}
+  controller: {fileID: 1855965666}
   tickManager: {fileID: 1539277029}
 --- !u!4 &1836068954
 Transform:
@@ -1903,6 +1857,54 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2035941040}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1855965664
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1855965665}
+  - component: {fileID: 1855965666}
+  m_Layer: 0
+  m_Name: FastSkyBridge
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1855965665
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1855965664}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2035941040}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1855965666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1855965664}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0238f5383313f881e8c500fa4c6b2ace, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FastSkyBridge
+  skyMaterial: {fileID: 2100000, guid: 9608213a80c78c146af27a947d1db94a, type: 2}
+  sunLight: {fileID: 787182061}
+  config: {fileID: 11400000, guid: 1d619e124add6708d810ce9dea817a71, type: 2}
+  maxStarBrightness: 2
 --- !u!1001 &1906473938
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2068,8 +2070,8 @@ Transform:
   m_Children:
   - {fileID: 787182063}
   - {fileID: 1539277030}
-  - {fileID: 1219759451}
   - {fileID: 1836068954}
+  - {fileID: 1855965665}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2097244081
