@@ -55,7 +55,7 @@ Material:
     - _Anisotropy: 0.76
     - _B: -2
     - _CloudAnisotropy: 0.9
-    - _CloudBrightness: 0.23044431
+    - _CloudBrightness: 0.1
     - _CloudDensity: 2
     - _CloudDensitySmoothness: 1
     - _CloudHeight: 0
@@ -81,7 +81,7 @@ Material:
     - _Saturation: 1
     - _ScaledHeight: 8
     - _ScatterStrength: 20
-    - _StarBrightness: 1.0782228
+    - _StarBrightness: 1.6186943
     - _StarJitterSpeed: 0.1
     - _StarRotateSpeed: 5
     - _StarScale: 2
@@ -94,6 +94,7 @@ Material:
     - _WaveLength: 0
     - _Wavelength: 0
     - _X: 1
+    - _XRMotionVectorsPass: 1
     m_Colors:
     - _CloudColour: {r: 1, g: 1, b: 1, a: 1}
     - _Coefficients: {r: 1, g: 1, b: 1, a: 0}

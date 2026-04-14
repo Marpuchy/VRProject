@@ -12,6 +12,8 @@ namespace CityBuilder
     /// </summary>
     public class MapBoundary : MonoBehaviour
     {
+        const string k_AutoSpawnName = "MapBoundary (Auto)";
+
         [Header("Boundary Size")]
         [Tooltip("Half-size (metres) of the playable square at level 1.")]
         [SerializeField] private float _initialHalfSize = 10f;
@@ -34,6 +36,13 @@ namespace CityBuilder
         [Tooltip("Seconds the expansion animation takes.")]
         [SerializeField, Min(0f)] private float _expandDuration = 1.2f;
 
+        [Header("Physical Player Constraint")]
+        [Tooltip("If enabled, physical HMD movement is clamped inside the map boundary.")]
+        [SerializeField] private bool _blockPhysicalWalkThroughWalls = true;
+
+        [Tooltip("Extra inside margin (metres) kept between the headset and boundary edge.")]
+        [SerializeField, Min(0f)] private float _physicalHeadPadding = 0.2f;
+
         // One struct per wall keeps collider + transform paired
         private Transform _north, _south, _east, _west;
 
@@ -46,6 +55,43 @@ namespace CityBuilder
         private float _startHalfSize;
         private float _expandTimer;
         private bool  _isExpanding;
+        private Transform _cachedHead;
+        private Transform _cachedPlayerRoot;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void EnsureBoundaryExists()
+        {
+            if (!Application.isPlaying)
+                return;
+
+            if (FindFirstObjectByType<MapBoundary>() != null)
+                return;
+
+            LevelManager levelManager = FindFirstObjectByType<LevelManager>();
+            if (levelManager == null)
+                return;
+
+            Vector3 center = ResolveAutoBoundaryCenter(levelManager);
+            GameObject boundaryRoot = new(k_AutoSpawnName);
+            boundaryRoot.transform.SetPositionAndRotation(center, Quaternion.identity);
+            boundaryRoot.transform.localScale = Vector3.one;
+            boundaryRoot.AddComponent<MapBoundary>();
+
+            Debug.Log($"[MapBoundary] Auto-created because no MapBoundary existed in scene. Center: {center}");
+        }
+
+        static Vector3 ResolveAutoBoundaryCenter(LevelManager levelManager)
+        {
+            GridDefinition grid = FindFirstObjectByType<GridDefinition>();
+            if (grid != null)
+            {
+                Vector3 origin = grid.Origin;
+                return new Vector3(origin.x, 0f, origin.z);
+            }
+
+            Vector3 levelManagerPosition = levelManager.transform.position;
+            return new Vector3(levelManagerPosition.x, 0f, levelManagerPosition.z);
+        }
 
         // ──────────────────────────────────────────────────────────────────────
         // Unity lifecycle
@@ -96,6 +142,27 @@ namespace CityBuilder
 
             if (t >= 1f)
                 _isExpanding = false;
+        }
+
+        private void LateUpdate()
+        {
+            if (!_blockPhysicalWalkThroughWalls)
+                return;
+
+            if (!TryResolvePlayerRig(out Transform playerRoot, out Transform head))
+                return;
+
+            float clampedHalfSize = Mathf.Max(0.01f, _currentHalfSize - _physicalHeadPadding);
+            Vector3 localHead = transform.InverseTransformPoint(head.position);
+            float clampedX = Mathf.Clamp(localHead.x, -clampedHalfSize, clampedHalfSize);
+            float clampedZ = Mathf.Clamp(localHead.z, -clampedHalfSize, clampedHalfSize);
+
+            Vector3 localCorrection = new Vector3(clampedX - localHead.x, 0f, clampedZ - localHead.z);
+            if (localCorrection.sqrMagnitude <= 0.0000001f)
+                return;
+
+            Vector3 worldCorrection = transform.TransformVector(localCorrection);
+            playerRoot.position += worldCorrection;
         }
 
         // ──────────────────────────────────────────────────────────────────────
@@ -155,6 +222,41 @@ namespace CityBuilder
         {
             wall.localPosition = localPos;
             wall.localScale    = localScale;
+        }
+
+        private bool TryResolvePlayerRig(out Transform playerRoot, out Transform head)
+        {
+            head = _cachedHead;
+            if (head == null)
+            {
+                Camera mainCamera = Camera.main;
+                if (mainCamera == null)
+                {
+                    playerRoot = null;
+                    return false;
+                }
+
+                head = mainCamera.transform;
+                _cachedHead = head;
+            }
+
+            playerRoot = _cachedPlayerRoot;
+            if (playerRoot == null)
+            {
+                CharacterController characterController = head.GetComponentInParent<CharacterController>();
+                if (characterController != null)
+                {
+                    playerRoot = characterController.transform;
+                }
+                else
+                {
+                    playerRoot = head.root;
+                }
+
+                _cachedPlayerRoot = playerRoot;
+            }
+
+            return playerRoot != null;
         }
 
         // ──────────────────────────────────────────────────────────────────────
