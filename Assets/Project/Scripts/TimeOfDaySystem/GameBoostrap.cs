@@ -3,7 +3,7 @@ using UnityEngine;
 public class GameBootstrap : MonoBehaviour
 {
     [SerializeField] private TimeOfDayConfig config;
-    [SerializeField] private DayNightController controller;
+    [SerializeField] private FastSkyBridge controller; // Cambiado a FastSkyBridge
     [SerializeField] private TickManager tickManager;
 
     private TimeOfDayService _timeService;
@@ -14,14 +14,23 @@ public class GameBootstrap : MonoBehaviour
         _timeService = new TimeOfDayService(config);
 
         // Inyectar dependencias
-        controller.Initialize(_timeService);
+        if (controller != null)
+        {
+            controller.Initialize(_timeService);
+        }
 
-        // Registrar en el loop
-        tickManager.Register(_timeService);
+        // Registrar en el loop de Ticks
+        if (tickManager != null)
+        {
+            tickManager.Register(_timeService);
+        }
     }
 
     private void OnDestroy()
     {
-        tickManager.Unregister(_timeService);
+        if (tickManager != null)
+        {
+            tickManager.Unregister(_timeService);
+        }
     }
 }
