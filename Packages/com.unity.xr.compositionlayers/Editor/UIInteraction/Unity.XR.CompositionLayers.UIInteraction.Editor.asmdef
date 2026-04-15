@@ -2,7 +2,8 @@
     "name": "Unity.XR.CompositionLayers.UIInteraction.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:a47483e66eeb94b36ac0bf05d89bcca4"
+        "GUID:a47483e66eeb94b36ac0bf05d89bcca4",
+        "GUID:3f088b6c6874b1b49a97747d1259079a"
     ],
     "includePlatforms": [
         "Editor"

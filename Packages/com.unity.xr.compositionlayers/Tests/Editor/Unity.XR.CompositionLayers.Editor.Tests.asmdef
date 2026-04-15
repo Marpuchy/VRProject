@@ -6,7 +6,8 @@
         "Unity.XR.CompositionLayers",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "Unity.XR.CompositionLayers.Tests"
+        "Unity.XR.CompositionLayers.Tests",
+        "Unity.XR.CompositionLayers.UIInteraction"
     ],
     "includePlatforms": [
         "Editor"
