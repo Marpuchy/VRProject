@@ -169,7 +169,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -335,7 +335,7 @@ PrefabInstance:
     - target: {fileID: 2808410049059023866, guid: 0267a1d338db2bf4c9625e450bbaaad0,
         type: 3}
       propertyPath: m_DATransport
-      value:
+      value: 
       objectReference: {fileID: 244505892}
     - target: {fileID: 2808410049059023866, guid: 0267a1d338db2bf4c9625e450bbaaad0,
         type: 3}
@@ -345,7 +345,7 @@ PrefabInstance:
     - target: {fileID: 2808410049059023866, guid: 0267a1d338db2bf4c9625e450bbaaad0,
         type: 3}
       propertyPath: m_LocalTransport
-      value:
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 8647664954492677990, guid: 0267a1d338db2bf4c9625e450bbaaad0,
         type: 3}
@@ -440,8 +440,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 637a7c36dc874286a7ac74b1aeabc1ad, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &341859027
 GameObject:
   m_ObjectHideFlags: 0
@@ -495,7 +495,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7f8dcc15ffd55f350be56012b6d8338c, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.CityStatsHudPresenter
   m_SimulationController: {fileID: 1616361755}
   m_CityStateChangedEvent: {fileID: 0}
@@ -509,33 +509,12 @@ MonoBehaviour:
   m_TextClampPadding: 14
   m_TargetCanvas: {fileID: 0}
   m_PanelRootOverride: {fileID: 0}
-  m_OrganizeExistingPanelOnAwake: 1
-  m_CreateMissingRowsIfNeeded: 0
-  m_CreateMissingIconPlaceholders: 1
-  m_ApplyPanelBackground: 0
+  m_BuildPanelOnAwake: 1
+  m_CreateFallbackLayoutIfMissing: 1
+  m_PanelSize: {x: 560, y: 300}
+  m_PanelAnchorOffset: {x: -24, y: -24}
   m_PanelColor: {r: 0.08, g: 0.1, b: 0.13, a: 0.86}
   m_TextColor: {r: 0.95, g: 0.96, b: 0.98, a: 1}
-  m_PanelPadding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
-  m_RowSpacing: 0
-  m_RowHeight: 0
-  m_ResourcesRowHeight: 0
-  m_IconSize: {x: 0, y: 0}
-  m_MoneyIcon: {fileID: 0}
-  m_HappinessIcon: {fileID: 0}
-  m_PopulationIcon: {fileID: 0}
-  m_LevelIcon: {fileID: 0}
-  m_ResourcesIcon: {fileID: 0}
-  m_MoneyIconSprite: {fileID: 0}
-  m_HappinessIconSprite: {fileID: 0}
-  m_PopulationIconSprite: {fileID: 0}
-  m_LevelIconSprite: {fileID: 0}
-  m_ResourcesIconSprite: {fileID: 0}
-  m_IconTint: {r: 0, g: 0, b: 0, a: 0}
-  m_EmptyIconTint: {r: 0, g: 0, b: 0, a: 0}
   m_PinHudToPlayerEyes: 1
   m_UseWorldSpaceCanvas: 1
   m_WorldCanvasSize: {x: 1200, y: 380}
@@ -552,7 +531,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0}
@@ -627,7 +606,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -764,7 +743,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -901,7 +880,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1090,7 +1069,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
   m_UsePipelineSettings: 1
   m_AdditionalLightsShadowResolutionTier: 2
@@ -1154,8 +1133,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7951c64acb0fa62458bf30a60089fe2d, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_IgnoreReversedGraphics: 0
   m_CheckFor2DOcclusion: 0
   m_CheckFor3DOcclusion: 0
@@ -1173,8 +1152,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
   m_BlockingMask:
@@ -1190,8 +1169,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
@@ -1273,7 +1252,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2358a05810058ef44b134ead453174c9, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilder.LevelManager
   _xpThresholds: 64000000fa000000f4010000e8030000d0070000a00f0000
 --- !u!4 &1057178318
@@ -1319,7 +1298,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38d9c7468c22c627ba9f426515ac4ff6, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilder.Buildings.CitizenNeedsSystem
   tickInterval: 5
   attractInterval: 10
@@ -1333,7 +1312,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d22363d7eb0d27eec9e9d4a46120b2e0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilder.Buildings.ResourceGrid
   tickInterval: 3
 --- !u!4 &1106196322
@@ -1361,7 +1340,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c53aa8514be0f21288177d25dded8d2c, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridDefinition
 --- !u!1 &1269791852 stripped
 GameObject:
@@ -1379,7 +1358,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6adef0dfe7702b16cacf8d72f96dce20, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HandleRaycastFilter
   handleLayer:
     serializedVersion: 2
@@ -1403,7 +1382,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6adef0dfe7702b16cacf8d72f96dce20, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HandleRaycastFilter
   handleLayer:
     serializedVersion: 2
@@ -1440,7 +1419,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
   m_IgnoreReversedGraphics: 1
   m_BlockingObjects: 0
@@ -1457,7 +1436,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
   m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
@@ -1540,7 +1519,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 16da1b7b166e354128922788c0b05f9f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TickManager
 --- !u!4 &1539277030
 Transform:
@@ -1585,7 +1564,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
   m_SendPointerHoverToParent: 1
   m_MoveRepeatDelay: 0.5
@@ -1627,7 +1606,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
@@ -1694,7 +1673,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1814,7 +1793,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7dbe83999827f4183ad9308f8e93c9e0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.CityBuildingRegistry
   m_GridDefinition: {fileID: 1114009702}
 --- !u!114 &1616361753
@@ -1827,7 +1806,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9c890e3ac95034009828725491a19be3, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.CityBuildingPlacementService
   m_SimulationController: {fileID: 1616361755}
   m_BuildingRegistry: {fileID: 1616361752}
@@ -1845,7 +1824,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 07c1b71e0b1564c07a8320f8c358b89f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.SimulationTickSystem
   m_TickIntervalSeconds: 1
   m_Balance: {fileID: 11400000, guid: 118d48f7c8e155e7a8f5d27f899b1807, type: 2}
@@ -1860,7 +1839,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2c79e81ddce1eb4589490c641e9961a5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.CitySimulationController
   m_Balance: {fileID: 11400000, guid: 118d48f7c8e155e7a8f5d27f899b1807, type: 2}
   m_LevelDefinitions:
@@ -1916,7 +1895,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6169be00dd572f94809c2296c687ce8, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameBootstrap
   config: {fileID: 11400000, guid: 1d619e124add6708d810ce9dea817a71, type: 2}
   controller: {fileID: 1855965666}
@@ -1978,7 +1957,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0238f5383313f881e8c500fa4c6b2ace, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FastSkyBridge
   skyMaterial: {fileID: 2100000, guid: 9608213a80c78c146af27a947d1db94a, type: 2}
   sunLight: {fileID: 787182061}
@@ -2204,7 +2183,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8f4f9a0c05e79af428c8c2ac20edde54, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: VRMP::XRMultiplayer.Billboard
   m_WorldUp: 1
   m_FlipForward: 1
@@ -2218,8 +2197,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a4f6ed3f0a5b4e34ba9a8a2bf8fd2f7c, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_BuildingSlots:
   - slotName: PerfectCube
     buildingPrefab: {fileID: 2853952606427955886, guid: f0f4f47773118b12eaf525d698e14756,
@@ -2280,7 +2259,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0}
@@ -2318,7 +2297,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 17997af32bd14e8b8620809bfa54b25e, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.BuildingPrefabSpawnController
   m_BuildingPanelUI: {fileID: 2097244084}
   m_BuildingCatalogBinder: {fileID: 2097244088}
@@ -2377,7 +2356,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38f5d1907abbf291b80adc76ad39755a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.BuildingPanelCatalogBinder
   m_Panel: {fileID: 2097244084}
   m_Catalog: {fileID: 11400000, guid: 3e6e612f2b7f8085e82dba934cc17da7, type: 2}
@@ -3324,7 +3303,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0ad34abafad169848a38072baa96cdb2, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable
   m_InteractionManager: {fileID: 0}
   m_Colliders: []

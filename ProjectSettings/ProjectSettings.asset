@@ -964,11 +964,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: 531b16ee-15bc-4ea1-955f-c7b5544f906b
+  cloudProjectId: 900340f1-caca-42c8-bd3d-fdd827f5c6dc
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
   projectName: VRProject
-  organizationId: cesartraver
+  organizationId: unity_8d6c1cdeca99a3cf724f
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

@@ -111,7 +111,8 @@ namespace CityBuilderVR
                     {
                         slotName = definition.DisplayName,
                         buildingPrefab = definition.Prefab,
-                        icon = definition.Icon
+                        icon = definition.Icon,
+                        category = BuildingPanelUI.FromSimulationCategory(definition.Category)
                     });
                     m_SlotDefinitions.Add(definition);
                 }
