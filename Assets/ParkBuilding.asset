@@ -15,7 +15,9 @@ MonoBehaviour:
   m_Id: park
   m_DisplayName: Park
   m_Icon: {fileID: 0}
-  m_Prefab: {fileID: 1671396416728727402, guid: bcc9ee95186deea98918975e56563761,
+  m_ModelPrefab: {fileID: 0}
+  m_BuildPrefab: {fileID: 0}
+  m_Prefab: {fileID: 2853952606427955886, guid: fd501d5e1b6e2894b95e0a1132b700d1,
     type: 3}
   m_StartUnlocked: 0
   m_RequiredLevel: 2
