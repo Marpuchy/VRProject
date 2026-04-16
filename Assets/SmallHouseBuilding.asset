@@ -15,8 +15,9 @@ MonoBehaviour:
   m_Id: small_house
   m_DisplayName: Small House
   m_Icon: {fileID: 21300000, guid: 17d565bb4a7744b41b7e4dc7e3a09e35, type: 3}
-  m_Prefab: {fileID: 2853952606427955886, guid: f0f4f47773118b12eaf525d698e14756,
-    type: 3}
+  m_Prefab: {fileID: 6698971214814126596, guid: 9b6df99b1083e574c9e8f13665436e8d, type: 3}
+  m_ModelPrefab: {fileID: 0}
+  m_BuildPrefab: {fileID: 0}
   m_StartUnlocked: 1
   m_RequiredLevel: 1
   m_BuildCost: 130

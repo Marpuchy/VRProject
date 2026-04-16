@@ -5,9 +5,9 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 [RequireComponent(typeof(XRSimpleInteractable))]
 public sealed class ScaleHandle : MonoBehaviour
 {
-    [SerializeField] private Transform _targetCube;   // Cubo que modificamos
+    [SerializeField] private Transform _targetCube;
     [SerializeField] private GridDefinition _grid;
-    [SerializeField] private Vector3 _axis = Vector3.up; // Eje que modifica este handle
+    [SerializeField] private Vector3 _axis = Vector3.up;
     [Header("Handle Setup")]
     [SerializeField] private bool _keepWorldScale = true;
     [SerializeField] private bool _useTriggerCollider = true;
@@ -23,19 +23,36 @@ public sealed class ScaleHandle : MonoBehaviour
     private Vector3 _initialParentScale;
     private int _hoverCount;
 
+    public void Configure(Transform targetCube, GridDefinition grid, Vector3 axis)
+    {
+        _targetCube = targetCube;
+        _grid = grid;
+        _axis = axis;
+        CacheTargetReferences();
+    }
+
     public void SetGrid(GridDefinition grid)
     {
         _grid = grid;
     }
 
+    public void SetDesiredWorldScale(float worldScale)
+    {
+        Vector3 parentScale = transform.parent ? transform.parent.lossyScale : Vector3.one;
+        _initialParentScale = parentScale;
+        _initialLocalScale = new Vector3(
+            SafeDivide(Mathf.Max(0.01f, worldScale), parentScale.x),
+            SafeDivide(Mathf.Max(0.01f, worldScale), parentScale.y),
+            SafeDivide(Mathf.Max(0.01f, worldScale), parentScale.z)
+        );
+
+        transform.localScale = _initialLocalScale;
+    }
+
     private void Awake()
     {
         _interactable = GetComponent<XRSimpleInteractable>();
-        if (_targetCube != null)
-        {
-            _targetGrabInteractable = _targetCube.GetComponent<XRGrabInteractable>();
-            _targetCubeColliders = _targetCube.GetComponents<Collider>();
-        }
+        CacheTargetReferences();
 
         _initialLocalScale = transform.localScale;
         _initialParentScale = transform.parent ? transform.parent.lossyScale : Vector3.one;
@@ -45,7 +62,6 @@ public sealed class ScaleHandle : MonoBehaviour
         _interactable.selectEntered.AddListener(OnGrab);
         _interactable.selectExited.AddListener(OnRelease);
     }
-
 
     private void OnDestroy()
     {
@@ -73,6 +89,9 @@ public sealed class ScaleHandle : MonoBehaviour
 
     private void OnGrab(SelectEnterEventArgs args)
     {
+        if (_targetCube == null)
+            return;
+
         BlockTargetCubeInteraction();
         _initialGrabPos = args.interactorObject.transform.position;
         _initialScale = _targetCube.localScale;
@@ -90,7 +109,7 @@ public sealed class ScaleHandle : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!_interactable.isSelected)
+        if (_targetCube == null || !_interactable.isSelected)
             return;
 
         var interactor = _interactable.firstInteractorSelecting;
@@ -105,7 +124,7 @@ public sealed class ScaleHandle : MonoBehaviour
 
         ApplyUnidirectionalScale(newScale);
     }
-    
+
     private void LateUpdate()
     {
         if (!_keepWorldScale)
@@ -118,36 +137,149 @@ public sealed class ScaleHandle : MonoBehaviour
             _initialLocalScale.z * SafeDivide(_initialParentScale.z, parentScale.z)
         );
     }
-    
+
     private void ApplyUnidirectionalScale(Vector3 newScale)
     {
-        Vector3 currentScale = _targetCube.localScale;
-        Vector3 scaleDelta = newScale - currentScale;
+        if (!TryGetTargetBounds(out Bounds previousBounds))
+        {
+            Vector3 currentScale = _targetCube.localScale;
+            Vector3 scaleDelta = newScale - currentScale;
 
+            _targetCube.localScale = newScale;
+
+            Vector3 worldOffset = Vector3.Scale(scaleDelta * 0.5f, _axis);
+            _targetCube.position += worldOffset;
+            return;
+        }
+
+        float previousAnchor = GetAnchorCoordinate(previousBounds, _axis);
         _targetCube.localScale = newScale;
 
-        Vector3 worldOffset = Vector3.Scale(scaleDelta * 0.5f, _axis);
+        if (!TryGetTargetBounds(out Bounds updatedBounds))
+        {
+            return;
+        }
 
-        _targetCube.position += worldOffset;
+        float updatedAnchor = GetAnchorCoordinate(updatedBounds, _axis);
+        Vector3 anchorCorrection = Vector3.Scale(_axis, Vector3.one * (previousAnchor - updatedAnchor));
+        _targetCube.position += anchorCorrection;
     }
-
 
     private void SnapScaleToGrid()
     {
+        if (_targetCube == null || _grid == null)
+            return;
+
         Vector3 scale = _targetCube.localScale;
-        float cellSize = _grid.CellSize;
+        float cellSize = Mathf.Max(0.01f, _grid.CellSize);
 
         scale.x = Mathf.Round(scale.x / cellSize) * cellSize;
         scale.y = Mathf.Round(scale.y / cellSize) * cellSize;
         scale.z = Mathf.Round(scale.z / cellSize) * cellSize;
 
-        _targetCube.localScale = scale;
+        ApplyUnidirectionalScale(scale);
     }
-    
+
+    private void CacheTargetReferences()
+    {
+        if (_targetCube == null)
+            return;
+
+        _targetGrabInteractable = _targetCube.GetComponent<XRGrabInteractable>();
+        _targetCubeColliders = _targetCube.GetComponents<Collider>();
+    }
 
     private static float SafeDivide(float numerator, float denominator)
     {
         return Mathf.Approximately(denominator, 0f) ? 1f : numerator / denominator;
+    }
+
+    private bool TryGetTargetBounds(out Bounds bounds)
+    {
+        bounds = default;
+        if (_targetCube == null)
+        {
+            return false;
+        }
+
+        Renderer[] renderers = _targetCube.GetComponentsInChildren<Renderer>(true);
+        bool hasBounds = false;
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (ShouldIgnoreRenderer(renderer))
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        if (hasBounds)
+        {
+            return true;
+        }
+
+        Collider[] colliders = _targetCube.GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider collider = colliders[i];
+            if (collider == null || collider.GetComponentInParent<ScaleHandle>() != null)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = collider.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(collider.bounds);
+            }
+        }
+
+        return hasBounds;
+    }
+
+    private static bool ShouldIgnoreRenderer(Renderer renderer)
+    {
+        if (renderer == null)
+        {
+            return true;
+        }
+
+        if (renderer is LineRenderer)
+        {
+            return true;
+        }
+
+        return renderer.GetComponentInParent<ScaleHandle>() != null;
+    }
+
+    private static float GetAnchorCoordinate(Bounds bounds, Vector3 axis)
+    {
+        if (Mathf.Abs(axis.x) >= Mathf.Abs(axis.y) && Mathf.Abs(axis.x) >= Mathf.Abs(axis.z))
+        {
+            return axis.x >= 0f ? bounds.min.x : bounds.max.x;
+        }
+
+        if (Mathf.Abs(axis.z) >= Mathf.Abs(axis.y))
+        {
+            return axis.z >= 0f ? bounds.min.z : bounds.max.z;
+        }
+
+        return axis.y >= 0f ? bounds.min.y : bounds.max.y;
     }
 
     private void BlockTargetCubeInteraction()

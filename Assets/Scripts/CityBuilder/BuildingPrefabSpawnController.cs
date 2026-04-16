@@ -73,6 +73,9 @@ namespace CityBuilderVR
         [SerializeField] bool m_AddGrabInteractableIfMissing = true;
         [SerializeField] bool m_AddGridMovementConstraintIfMissing = true;
         [SerializeField] bool m_AddHorizontalGrabConstraintIfMissing = true;
+        [SerializeField] bool m_AddScaleHandlesIfMissing = true;
+        [SerializeField, Min(0.01f)] float m_ScaleHandleVisualSize = 0.04f;
+        [SerializeField, Min(0f)] float m_ScaleHandleOffset = 0.05f;
         [SerializeField] bool m_ConfigurePhysicsLikeTestCube = true;
         [SerializeField] bool m_ConfigureGrabLikeTestCube = true;
         [SerializeField] bool m_EnableGravityOnSpawn = true;
@@ -84,11 +87,12 @@ namespace CityBuilderVR
 
         int m_SelectedSlotIndex = -1;
         GameObject m_SelectedPrefab;
+        BuildingDefinitionSO m_SelectedDefinition;
 
         GameObject m_PreviewInstance;
         bool m_PreviewHasValidCell;
         bool m_LastPreviewValidity = true;
-        float m_PreviewHalfHeight;
+        float m_PreviewGroundOffset;
         float m_CurrentPreviewYaw;
         Vector3 m_LastPreviewWorldPosition;
         Quaternion m_LastPreviewWorldRotation;
@@ -182,12 +186,27 @@ namespace CityBuilderVR
         public void SetSelectedPrefab(GameObject prefab)
         {
             m_SelectedPrefab = prefab;
+
+            if (prefab == null)
+            {
+                m_SelectedDefinition = null;
+            }
+            else if (m_SelectedDefinition == null || !m_SelectedDefinition.UsesPrefab(prefab))
+            {
+                m_SelectedDefinition = ResolveDefinitionFromAuthoring(prefab);
+            }
+
             m_OnSelectedPrefabChanged.Invoke(prefab);
 
             if (prefab == null)
             {
                 ClearPreview();
             }
+        }
+
+        public void SetSelectedDefinition(BuildingDefinitionSO definition)
+        {
+            m_SelectedDefinition = definition;
         }
 
         public bool TryGetSelectedPrefab(out GameObject prefab)
@@ -198,19 +217,19 @@ namespace CityBuilderVR
 
         public bool TryGetSelectedBuildingDefinition(out BuildingDefinitionSO definition)
         {
+            if (m_SelectedDefinition != null)
+            {
+                definition = m_SelectedDefinition;
+                return true;
+            }
+
             if (m_BuildingCatalogBinder != null && m_BuildingCatalogBinder.TryGetSelectedDefinition(out definition))
             {
                 return definition != null;
             }
 
-            if (m_SelectedPrefab != null && m_SelectedPrefab.TryGetComponent(out BuildingDefinitionAuthoring authoring))
-            {
-                definition = authoring.Definition;
-                return definition != null;
-            }
-
-            definition = null;
-            return false;
+            definition = ResolveDefinitionFromAuthoring(m_SelectedPrefab);
+            return definition != null;
         }
 
         public void BeginPreviewForSelected()
@@ -342,6 +361,8 @@ namespace CityBuilderVR
                 ? Instantiate(prefab, position, rotation, parent)
                 : Instantiate(prefab, position, rotation);
 
+            ApplyDefinitionToInstance(instance, definition);
+
             if (m_UseSpawnPointScale && m_DefaultSpawnPoint != null)
             {
                 instance.transform.localScale = m_DefaultSpawnPoint.localScale;
@@ -364,6 +385,7 @@ namespace CityBuilderVR
         void HandleSlotSelected(int slotIndex, GameObject prefab)
         {
             m_SelectedSlotIndex = slotIndex;
+            m_SelectedDefinition = ResolveDefinitionForSlot(slotIndex, prefab);
             SetSelectedPrefab(prefab);
 
             if (m_UsePreviewPlacement)
@@ -408,15 +430,37 @@ namespace CityBuilderVR
                 return null;
             }
 
+            if (m_SelectedDefinition != null && m_SelectedDefinition.UsesPrefab(prefab))
+            {
+                return m_SelectedDefinition;
+            }
+
             if (m_BuildingCatalogBinder != null &&
                 m_BuildingCatalogBinder.TryGetSelectedDefinition(out BuildingDefinitionSO selectedDefinition) &&
                 selectedDefinition != null &&
-                selectedDefinition.Prefab == prefab)
+                selectedDefinition.UsesPrefab(prefab))
             {
                 return selectedDefinition;
             }
 
-            if (prefab.TryGetComponent(out BuildingDefinitionAuthoring authoring))
+            return ResolveDefinitionFromAuthoring(prefab);
+        }
+
+        BuildingDefinitionSO ResolveDefinitionForSlot(int slotIndex, GameObject prefab)
+        {
+            if (m_BuildingCatalogBinder != null &&
+                m_BuildingCatalogBinder.TryGetDefinitionForSlot(slotIndex, out BuildingDefinitionSO definition) &&
+                definition != null)
+            {
+                return definition;
+            }
+
+            return ResolveDefinitionFromAuthoring(prefab);
+        }
+
+        static BuildingDefinitionSO ResolveDefinitionFromAuthoring(GameObject prefab)
+        {
+            if (prefab != null && prefab.TryGetComponent(out BuildingDefinitionAuthoring authoring))
             {
                 return authoring.Definition;
             }
@@ -424,10 +468,30 @@ namespace CityBuilderVR
             return null;
         }
 
+        static void ApplyDefinitionToInstance(GameObject instance, BuildingDefinitionSO definition)
+        {
+            if (instance == null || definition == null)
+            {
+                return;
+            }
+
+            if (instance.TryGetComponent(out BuildingDefinitionPrefabBinder binder))
+            {
+                binder.ApplyDefinition(definition);
+                return;
+            }
+
+            if (instance.TryGetComponent(out BuildingDefinitionAuthoring authoring))
+            {
+                authoring.SetDefinition(definition);
+            }
+        }
+
         void CreatePreviewInstance(GameObject prefab)
         {
             ClearPreview();
             ResetXRInputEdgeState();
+            BuildingDefinitionSO definition = ResolveBuildingDefinition(prefab);
 
             Quaternion startRotation = ResolveRotation(m_DefaultSpawnPoint != null ? m_DefaultSpawnPoint : transform);
             m_CurrentPreviewYaw = startRotation.eulerAngles.y;
@@ -436,8 +500,9 @@ namespace CityBuilderVR
                 ? Instantiate(prefab, Vector3.zero, Quaternion.Euler(0f, m_CurrentPreviewYaw, 0f), m_DefaultSpawnParent)
                 : Instantiate(prefab, Vector3.zero, Quaternion.Euler(0f, m_CurrentPreviewYaw, 0f));
 
+            ApplyDefinitionToInstance(m_PreviewInstance, definition);
             PreparePreviewInstance(m_PreviewInstance);
-            m_PreviewHalfHeight = ComputeHalfHeight(m_PreviewInstance);
+            m_PreviewGroundOffset = ComputeGroundOffset(m_PreviewInstance);
             m_LastPreviewValidity = true;
 
             UpdatePreviewTransform();
@@ -474,14 +539,18 @@ namespace CityBuilderVR
                 placementPoint = grid.Snap(placementPoint);
             }
 
-            placementPoint.y += m_PreviewHalfHeight + m_PreviewLift;
+            Vector3 spawnPosition = placementPoint;
+            spawnPosition.y += m_PreviewGroundOffset;
+
+            Vector3 previewPosition = spawnPosition;
+            previewPosition.y += m_PreviewLift;
 
             Quaternion rotation = ResolvePreviewRotation();
-            m_PreviewInstance.transform.SetPositionAndRotation(placementPoint, rotation);
+            m_PreviewInstance.transform.SetPositionAndRotation(previewPosition, rotation);
 
-            m_LastPreviewWorldPosition = placementPoint;
+            m_LastPreviewWorldPosition = spawnPosition;
             m_LastPreviewWorldRotation = rotation;
-            m_PreviewHasValidCell = CanPlaceAtPreviewPosition(placementPoint);
+            m_PreviewHasValidCell = CanPlaceAtPreviewPosition(spawnPosition);
 
             if (m_LastPreviewValidity != m_PreviewHasValidCell)
             {
@@ -713,58 +782,84 @@ namespace CityBuilderVR
             }
         }
 
-        float ComputeHalfHeight(GameObject target)
+        float ComputeGroundOffset(GameObject target)
         {
             if (target == null)
             {
                 return 0f;
             }
 
+            return TryGetPlacementBounds(target, out Bounds combinedBounds)
+                ? target.transform.position.y - combinedBounds.min.y
+                : 0f;
+        }
+
+        static bool TryGetPlacementBounds(GameObject target, out Bounds bounds)
+        {
             Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
             bool hasBounds = false;
-            Bounds combinedBounds = default;
+            bounds = default;
 
             for (int i = 0; i < renderers.Length; i++)
             {
-                if (renderers[i] == null)
+                Renderer renderer = renderers[i];
+                if (ShouldIgnoreBoundsRenderer(renderer))
                 {
                     continue;
                 }
 
                 if (!hasBounds)
                 {
-                    combinedBounds = renderers[i].bounds;
+                    bounds = renderer.bounds;
                     hasBounds = true;
                 }
                 else
                 {
-                    combinedBounds.Encapsulate(renderers[i].bounds);
+                    bounds.Encapsulate(renderer.bounds);
                 }
             }
 
-            if (!hasBounds)
+            if (hasBounds)
             {
-                Collider[] colliders = target.GetComponentsInChildren<Collider>(true);
-                for (int i = 0; i < colliders.Length; i++)
-                {
-                    if (colliders[i] == null)
-                    {
-                        continue;
-                    }
+                return true;
+            }
 
-                    if (!hasBounds)
-                    {
-                        combinedBounds = colliders[i].bounds;
-                        hasBounds = true;
-                    }
-                    else
-                    {
-                        combinedBounds.Encapsulate(colliders[i].bounds);
-                    }
+            Collider[] colliders = target.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Collider collider = colliders[i];
+                if (collider == null || collider.GetComponentInParent<ScaleHandle>() != null)
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = collider.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(collider.bounds);
                 }
             }
 
-            return hasBounds ? Mathf.Max(0f, combinedBounds.extents.y) : 0f;
+            return hasBounds;
+        }
+
+        static bool ShouldIgnoreBoundsRenderer(Renderer renderer)
+        {
+            if (renderer == null)
+            {
+                return true;
+            }
+
+            if (renderer is LineRenderer)
+            {
+                return true;
+            }
+
+            return renderer.GetComponentInParent<ScaleHandle>() != null;
         }
 
         void ClearPreview()
@@ -776,7 +871,7 @@ namespace CityBuilderVR
             }
 
             m_PreviewHasValidCell = false;
-            m_PreviewHalfHeight = 0f;
+            m_PreviewGroundOffset = 0f;
             m_LastPreviewValidity = true;
             ResetXRInputEdgeState();
         }
@@ -885,6 +980,11 @@ namespace CityBuilderVR
             if (gridConstraint != null)
             {
                 gridConstraint.SetGrid(grid);
+            }
+
+            if (m_AddScaleHandlesIfMissing)
+            {
+                RuntimeScaleHandleFactory.EnsureHandles(instance, grid, m_ScaleHandleVisualSize, m_ScaleHandleOffset);
             }
 
             ScaleHandle[] scaleHandles = instance.GetComponentsInChildren<ScaleHandle>(true);

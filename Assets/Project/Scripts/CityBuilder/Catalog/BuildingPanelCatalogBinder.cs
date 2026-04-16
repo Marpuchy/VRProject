@@ -88,7 +88,7 @@ namespace CityBuilderVR
 
             List<BuildingPanelUI.BuildingSlotData> slots = new();
             m_SlotDefinitions.Clear();
-            int skippedWithoutPrefabCount = 0;
+            int skippedWithoutSpawnPrefabCount = 0;
 
             if (m_Catalog != null)
             {
@@ -101,16 +101,17 @@ namespace CityBuilderVR
                         continue;
                     }
 
-                    if (!m_IncludeDefinitionsWithoutPrefab && definition.Prefab == null)
+                    GameObject spawnPrefab = definition.Prefab;
+                    if (!m_IncludeDefinitionsWithoutPrefab && spawnPrefab == null)
                     {
-                        skippedWithoutPrefabCount++;
+                        skippedWithoutSpawnPrefabCount++;
                         continue;
                     }
 
                     slots.Add(new BuildingPanelUI.BuildingSlotData
                     {
                         slotName = definition.DisplayName,
-                        buildingPrefab = definition.Prefab,
+                        buildingPrefab = spawnPrefab,
                         icon = definition.Icon
                     });
                     m_SlotDefinitions.Add(definition);
@@ -125,10 +126,10 @@ namespace CityBuilderVR
 
             if (slots.Count == 0)
             {
-                if (skippedWithoutPrefabCount > 0)
+                if (skippedWithoutSpawnPrefabCount > 0)
                 {
                     Debug.LogWarning(
-                        $"BuildingPanelCatalogBinder produced 0 visible slots. {skippedWithoutPrefabCount} building definitions were skipped because they do not have a prefab assigned.",
+                        $"BuildingPanelCatalogBinder produced 0 visible slots. {skippedWithoutSpawnPrefabCount} building definitions were skipped because they do not have a spawn prefab or 3D model assigned.",
                         this);
                 }
                 else if (m_Catalog != null)

@@ -11,6 +11,10 @@ namespace CityBuilderVR
 
         [Header("Presentation")]
         [SerializeField] Sprite m_Icon;
+        [SerializeField] GameObject m_ModelPrefab;
+        [SerializeField] GameObject m_BuildPrefab;
+
+        [Header("Legacy Direct Prefab")]
         [SerializeField] GameObject m_Prefab;
 
         [Header("Progression")]
@@ -35,7 +39,9 @@ namespace CityBuilderVR
         public string Id => string.IsNullOrWhiteSpace(m_Id) ? name : m_Id;
         public string DisplayName => string.IsNullOrWhiteSpace(m_DisplayName) ? name : m_DisplayName;
         public Sprite Icon => m_Icon;
-        public GameObject Prefab => m_Prefab;
+        public GameObject ModelPrefab => ResolveModelPrefab();
+        public GameObject BuildPrefab => m_BuildPrefab;
+        public GameObject Prefab => ResolveSpawnPrefab();
         public bool StartUnlocked => m_StartUnlocked;
         public int RequiredLevel => Mathf.Max(1, m_RequiredLevel);
         public int BuildCost => m_BuildCost;
@@ -47,6 +53,16 @@ namespace CityBuilderVR
         public float FlatHappinessBonus => m_FlatHappinessBonus;
         public ResourceTypeSO[] RequiredResources => m_RequiredResources;
         public ResourceCoverageArea[] ProvidedResourceAreas => m_ProvidedResourceAreas;
+
+        public bool UsesPrefab(GameObject prefab)
+        {
+            if (prefab == null)
+            {
+                return false;
+            }
+
+            return prefab == Prefab || prefab == m_BuildPrefab || prefab == m_Prefab || prefab == m_ModelPrefab;
+        }
 
         public bool IsUnlockedAtLevel(int level)
         {
@@ -131,6 +147,31 @@ namespace CityBuilderVR
             }
 
             return 0f;
+        }
+
+        GameObject ResolveSpawnPrefab()
+        {
+            if (m_BuildPrefab != null)
+            {
+                return m_BuildPrefab;
+            }
+
+            if (m_Prefab != null)
+            {
+                return m_Prefab;
+            }
+
+            return m_ModelPrefab;
+        }
+
+        GameObject ResolveModelPrefab()
+        {
+            if (m_ModelPrefab != null)
+            {
+                return m_ModelPrefab;
+            }
+
+            return m_Prefab;
         }
 
 #if UNITY_EDITOR

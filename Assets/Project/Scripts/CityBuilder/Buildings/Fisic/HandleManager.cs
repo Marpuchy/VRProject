@@ -7,23 +7,65 @@ public sealed class HandleManager : MonoBehaviour
     [SerializeField] private Transform _handleFront;
     [SerializeField] private float _offset = 0.05f;
 
-    private Renderer _renderer;
-
-    private void Awake()
+    public void Configure(Transform handleUp, Transform handleRight, Transform handleFront, float offset)
     {
-        _renderer = GetComponentInChildren<Renderer>();
+        _handleUp = handleUp;
+        _handleRight = handleRight;
+        _handleFront = handleFront;
+        _offset = offset;
     }
 
     private void LateUpdate()
     {
-        if (_renderer == null)
+        if (!TryGetCombinedBounds(out Bounds bounds))
             return;
-
-        Bounds bounds = _renderer.bounds;
 
         UpdateHandle(_handleUp, bounds, Vector3.up);
         UpdateHandle(_handleRight, bounds, Vector3.right);
         UpdateHandle(_handleFront, bounds, Vector3.forward);
+    }
+
+    private bool TryGetCombinedBounds(out Bounds bounds)
+    {
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        bool hasBounds = false;
+        bounds = default;
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (ShouldIgnoreRenderer(renderer))
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                bounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        return hasBounds;
+    }
+
+    private static bool ShouldIgnoreRenderer(Renderer renderer)
+    {
+        if (renderer == null)
+        {
+            return true;
+        }
+
+        if (renderer is LineRenderer)
+        {
+            return true;
+        }
+
+        return renderer.GetComponentInParent<ScaleHandle>() != null;
     }
 
     private void UpdateHandle(Transform handle, Bounds bounds, Vector3 direction)
