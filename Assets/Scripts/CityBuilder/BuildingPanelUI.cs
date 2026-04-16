@@ -10,6 +10,13 @@ using UnityEditor;
 
 namespace CityBuilderVR
 {
+    public enum BuildingPanelCategory
+    {
+        Housing,
+        Resources,
+        Decoration,
+    }
+
     [DisallowMultipleComponent]
     public class BuildingPanelUI : MonoBehaviour
     {
@@ -19,6 +26,7 @@ namespace CityBuilderVR
             public string slotName;
             public GameObject buildingPrefab;
             public Sprite icon;
+            public BuildingPanelCategory category;
         }
 
         [Serializable]
@@ -40,6 +48,14 @@ namespace CityBuilderVR
         [SerializeField, Min(1)] int m_EmptySlotCount = 4;
         [SerializeField] bool m_DisableButtonsWithoutPrefab = true;
 
+        [Header("Categories")]
+        [SerializeField] bool m_EnableCategoryMenu = true;
+        [SerializeField] string m_HousingCategoryLabel = "Viviendas";
+        [SerializeField] string m_ResourcesCategoryLabel = "Recursos";
+        [SerializeField] string m_DecorationCategoryLabel = "Decoracion";
+        [SerializeField] string m_BackButtonLabel = "Atras";
+        [SerializeField] string m_EmptyCategorySlotLabel = "Sin edificios";
+
         [Header("Canvas References")]
         [SerializeField] Canvas m_TargetCanvas;
         [SerializeField] string m_Title = "Buildings";
@@ -47,6 +63,7 @@ namespace CityBuilderVR
         [SerializeField] RectTransform m_SlotsRootOverride;
         [SerializeField] ScrollRect m_SlotScrollRect;
         [SerializeField] BuildingSlotVisualRefs m_SlotTemplate;
+        [SerializeField] Button m_BackButton;
         [SerializeField] bool m_BuildPanelOnStart = true;
         [SerializeField] bool m_CreateFallbackLayoutIfMissing = true;
 
@@ -77,12 +94,16 @@ namespace CityBuilderVR
         [SerializeField] BuildingPrefabSelectedEvent m_OnPrefabSelected = new();
 
         readonly List<BuildingSlotVisualRefs> m_RuntimeSlots = new();
+        readonly List<int> m_RuntimeSlotIndices = new();
         readonly Dictionary<int, Sprite> m_EditorPrefabIconCache = new();
 
         bool m_UsingExternalSlotsData;
+        bool m_ShowingCategoryMenu = true;
+        BuildingPanelCategory m_CurrentCategory = BuildingPanelCategory.Housing;
         int m_SelectedSlotIndex = -1;
         GameObject m_SelectedPrefab;
         TMP_Text m_TitleLabel;
+        TMP_Text m_BackButtonText;
         bool m_FollowOffsetInitialized;
         Transform m_LastFollowTarget;
         Vector3 m_RuntimeFollowLocalPositionOffset;
@@ -144,6 +165,7 @@ namespace CityBuilderVR
                     slotName = prefab != null && m_OverwriteSlotNamesFromQuickList ? prefab.name : $"Slot {i + 1}",
                     buildingPrefab = prefab,
                     icon = null,
+                    category = ResolvePrefabCategory(prefab),
                 });
             }
 
@@ -171,6 +193,39 @@ namespace CityBuilderVR
             }
         }
 
+        public void ShowCategoryMenu()
+        {
+            if (!m_EnableCategoryMenu)
+            {
+                return;
+            }
+
+            m_ShowingCategoryMenu = true;
+            RebuildSlots();
+        }
+
+        public void ShowHousing()
+        {
+            ShowCategory(BuildingPanelCategory.Housing);
+        }
+
+        public void ShowResources()
+        {
+            ShowCategory(BuildingPanelCategory.Resources);
+        }
+
+        public void ShowDecoration()
+        {
+            ShowCategory(BuildingPanelCategory.Decoration);
+        }
+
+        public void ShowCategory(BuildingPanelCategory category)
+        {
+            m_CurrentCategory = category;
+            m_ShowingCategoryMenu = false;
+            RebuildSlots();
+        }
+
         public void RebuildSlots()
         {
             if (!EnsureRuntimeLayout())
@@ -180,7 +235,13 @@ namespace CityBuilderVR
 
             ClearRuntimeSlots();
 
-            if (m_BuildingSlots.Count == 0)
+            if (m_EnableCategoryMenu && m_ShowingCategoryMenu)
+            {
+                CreateCategoryRuntimeSlot(BuildingPanelCategory.Housing);
+                CreateCategoryRuntimeSlot(BuildingPanelCategory.Resources);
+                CreateCategoryRuntimeSlot(BuildingPanelCategory.Decoration);
+            }
+            else if (m_BuildingSlots.Count == 0)
             {
                 for (int i = 0; i < Mathf.Max(1, m_EmptySlotCount); i++)
                 {
@@ -189,17 +250,30 @@ namespace CityBuilderVR
             }
             else
             {
+                int visibleCount = 0;
                 for (int i = 0; i < m_BuildingSlots.Count; i++)
                 {
                     BuildingSlotData slot = m_BuildingSlots[i];
+                    if (m_EnableCategoryMenu && !IsSlotVisibleInCurrentCategory(slot))
+                    {
+                        continue;
+                    }
+
                     bool hasPrefab = slot.buildingPrefab != null;
                     bool interactable = m_DisableButtonsWithoutPrefab ? hasPrefab : true;
                     CreateRuntimeSlot(slot, i, interactable);
+                    visibleCount++;
+                }
+
+                if (visibleCount == 0)
+                {
+                    CreateMessageRuntimeSlot(string.IsNullOrWhiteSpace(m_EmptyCategorySlotLabel) ? "Sin edificios" : m_EmptyCategorySlotLabel);
                 }
             }
 
             UpdateSelectionVisuals();
             RefreshScrollState();
+            UpdateHeaderState();
         }
 
         public void SelectSlot(int slotIndex)
@@ -374,15 +448,123 @@ namespace CityBuilderVR
 
             if (m_TitleLabel != null)
             {
-                m_TitleLabel.text = string.IsNullOrWhiteSpace(m_Title) ? "Buildings" : m_Title;
                 m_TitleLabel.color = m_TextColor;
                 m_TitleLabel.fontSize = 26f;
                 m_TitleLabel.alignment = TextAlignmentOptions.Center;
             }
 
+            EnsureBackButton(headerRect);
+            UpdateHeaderState();
+
             if (headerRect != null)
             {
                 headerRect.SetAsFirstSibling();
+            }
+        }
+
+        void EnsureBackButton(RectTransform headerRect)
+        {
+            if (headerRect == null)
+            {
+                return;
+            }
+
+            if (m_BackButton == null)
+            {
+                Transform existingBackButton = headerRect.Find("BackButton");
+                if (existingBackButton != null)
+                {
+                    m_BackButton = existingBackButton.GetComponent<Button>();
+                }
+            }
+
+            if (m_BackButton == null)
+            {
+                GameObject backObject = new("BackButton", typeof(RectTransform), typeof(Image), typeof(Button));
+                backObject.transform.SetParent(headerRect, false);
+
+                RectTransform backRect = backObject.GetComponent<RectTransform>();
+                backRect.anchorMin = new Vector2(0f, 0f);
+                backRect.anchorMax = new Vector2(0f, 1f);
+                backRect.pivot = new Vector2(0f, 0.5f);
+                backRect.anchoredPosition = Vector2.zero;
+                backRect.sizeDelta = new Vector2(124f, 0f);
+
+                Image backImage = backObject.GetComponent<Image>();
+                backImage.color = m_SlotColor;
+
+                m_BackButton = backObject.GetComponent<Button>();
+                m_BackButton.targetGraphic = backImage;
+
+                GameObject labelObject = new("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+                labelObject.transform.SetParent(backObject.transform, false);
+
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = new Vector2(8f, 0f);
+                labelRect.offsetMax = new Vector2(-8f, 0f);
+
+                m_BackButtonText = labelObject.GetComponent<TMP_Text>();
+            }
+
+            if (m_BackButtonText == null && m_BackButton != null)
+            {
+                m_BackButtonText = m_BackButton.GetComponentInChildren<TMP_Text>(true);
+            }
+
+            if (m_BackButtonText == null && m_BackButton != null)
+            {
+                GameObject labelObject = new("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+                labelObject.transform.SetParent(m_BackButton.transform, false);
+
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = new Vector2(8f, 0f);
+                labelRect.offsetMax = new Vector2(-8f, 0f);
+
+                m_BackButtonText = labelObject.GetComponent<TMP_Text>();
+            }
+
+            if (m_BackButtonText != null)
+            {
+                m_BackButtonText.text = string.IsNullOrWhiteSpace(m_BackButtonLabel) ? "Atras" : m_BackButtonLabel;
+                m_BackButtonText.color = m_TextColor;
+                m_BackButtonText.fontSize = 18f;
+                m_BackButtonText.alignment = TextAlignmentOptions.Center;
+                m_BackButtonText.textWrappingMode = TextWrappingModes.NoWrap;
+                m_BackButtonText.overflowMode = TextOverflowModes.Ellipsis;
+            }
+
+            m_BackButton.onClick.RemoveAllListeners();
+            m_BackButton.onClick.AddListener(ShowCategoryMenu);
+        }
+
+        void UpdateHeaderState()
+        {
+            bool categoryViewActive = m_EnableCategoryMenu && !m_ShowingCategoryMenu;
+
+            if (m_TitleLabel != null)
+            {
+                m_TitleLabel.text = categoryViewActive
+                    ? ResolveCategoryLabel(m_CurrentCategory)
+                    : (string.IsNullOrWhiteSpace(m_Title) ? "Buildings" : m_Title);
+
+                RectTransform titleRect = m_TitleLabel.rectTransform;
+                if (titleRect != null)
+                {
+                    titleRect.anchorMin = Vector2.zero;
+                    titleRect.anchorMax = Vector2.one;
+                    titleRect.offsetMin = categoryViewActive ? new Vector2(132f, 0f) : Vector2.zero;
+                    titleRect.offsetMax = Vector2.zero;
+                }
+            }
+
+            if (m_BackButton != null)
+            {
+                m_BackButton.gameObject.SetActive(categoryViewActive);
+                m_BackButton.interactable = categoryViewActive;
             }
         }
 
@@ -559,7 +741,7 @@ namespace CityBuilderVR
             TMP_Text label = labelObject.GetComponent<TMP_Text>();
             label.fontSize = 18f;
             label.alignment = TextAlignmentOptions.Center;
-            label.enableWordWrapping = false;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
             label.overflowMode = TextOverflowModes.Ellipsis;
 
             LayoutElement labelLayout = labelObject.GetComponent<LayoutElement>();
@@ -573,6 +755,73 @@ namespace CityBuilderVR
             refs.canvasGroup = slotObject.GetComponent<CanvasGroup>();
             refs.layoutElement = layoutElement;
             return refs;
+        }
+
+        void CreateCategoryRuntimeSlot(BuildingPanelCategory category)
+        {
+            if (m_SlotTemplate == null || m_SlotsRootOverride == null)
+            {
+                return;
+            }
+
+            BuildingSlotVisualRefs runtimeSlot = Instantiate(m_SlotTemplate, m_SlotsRootOverride);
+            runtimeSlot.gameObject.name = $"Category_{category}";
+            runtimeSlot.gameObject.SetActive(true);
+            runtimeSlot.AutoWire();
+
+            if (runtimeSlot.layoutElement != null)
+            {
+                runtimeSlot.layoutElement.preferredWidth = m_SlotSize.x;
+                runtimeSlot.layoutElement.preferredHeight = m_SlotSize.y;
+            }
+
+            BuildingPanelCategory capturedCategory = category;
+            runtimeSlot.Configure(
+                ResolveCategoryLabel(category),
+                null,
+                true,
+                false,
+                m_SlotColor,
+                m_SelectedSlotColor,
+                m_DisabledSlotColor,
+                m_TextColor,
+                () => ShowCategory(capturedCategory));
+
+            m_RuntimeSlots.Add(runtimeSlot);
+            m_RuntimeSlotIndices.Add(-1);
+        }
+
+        void CreateMessageRuntimeSlot(string message)
+        {
+            if (m_SlotTemplate == null || m_SlotsRootOverride == null)
+            {
+                return;
+            }
+
+            BuildingSlotVisualRefs runtimeSlot = Instantiate(m_SlotTemplate, m_SlotsRootOverride);
+            runtimeSlot.gameObject.name = "EmptyCategoryMessage";
+            runtimeSlot.gameObject.SetActive(true);
+            runtimeSlot.AutoWire();
+
+            if (runtimeSlot.layoutElement != null)
+            {
+                runtimeSlot.layoutElement.preferredWidth = m_SlotSize.x * 1.6f;
+                runtimeSlot.layoutElement.preferredHeight = m_SlotSize.y;
+            }
+
+            runtimeSlot.Configure(
+                message,
+                null,
+                false,
+                false,
+                m_SlotColor,
+                m_SelectedSlotColor,
+                m_DisabledSlotColor,
+                m_TextColor,
+                null);
+
+            m_RuntimeSlots.Add(runtimeSlot);
+            m_RuntimeSlotIndices.Add(-1);
         }
 
         void CreateRuntimeSlot(BuildingSlotData slot, int index, bool interactable)
@@ -606,6 +855,7 @@ namespace CityBuilderVR
                 () => SelectSlot(capturedIndex));
 
             m_RuntimeSlots.Add(runtimeSlot);
+            m_RuntimeSlotIndices.Add(index);
         }
 
         void ClearRuntimeSlots()
@@ -619,6 +869,7 @@ namespace CityBuilderVR
             }
 
             m_RuntimeSlots.Clear();
+            m_RuntimeSlotIndices.Clear();
 
             if (m_SlotsRootOverride == null)
             {
@@ -651,9 +902,14 @@ namespace CityBuilderVR
                     continue;
                 }
 
-                bool selected = i == m_SelectedSlotIndex;
+                int slotIndex = i < m_RuntimeSlotIndices.Count ? m_RuntimeSlotIndices[i] : i;
+                if (slotIndex < 0)
+                {
+                    continue;
+                }
+
+                bool selected = slotIndex == m_SelectedSlotIndex;
                 bool interactable = slot.button == null || slot.button.interactable;
-                int slotIndex = i;
                 slot.Configure(
                     slot.label != null ? slot.label.text : $"Slot {i + 1}",
                     slot.icon != null ? slot.icon.sprite : null,
@@ -707,6 +963,44 @@ namespace CityBuilderVR
             }
 
             return $"Slot {index + 1}";
+        }
+
+        bool IsSlotVisibleInCurrentCategory(BuildingSlotData slot)
+        {
+            return slot.category == m_CurrentCategory;
+        }
+
+        string ResolveCategoryLabel(BuildingPanelCategory category)
+        {
+            return category switch
+            {
+                BuildingPanelCategory.Housing => string.IsNullOrWhiteSpace(m_HousingCategoryLabel) ? "Viviendas" : m_HousingCategoryLabel,
+                BuildingPanelCategory.Resources => string.IsNullOrWhiteSpace(m_ResourcesCategoryLabel) ? "Recursos" : m_ResourcesCategoryLabel,
+                BuildingPanelCategory.Decoration => string.IsNullOrWhiteSpace(m_DecorationCategoryLabel) ? "Decoracion" : m_DecorationCategoryLabel,
+                _ => category.ToString(),
+            };
+        }
+
+        BuildingPanelCategory ResolvePrefabCategory(GameObject prefab)
+        {
+            if (prefab != null &&
+                prefab.TryGetComponent(out BuildingDefinitionAuthoring authoring) &&
+                authoring.Definition != null)
+            {
+                return FromSimulationCategory(authoring.Definition.Category);
+            }
+
+            return BuildingPanelCategory.Housing;
+        }
+
+        public static BuildingPanelCategory FromSimulationCategory(BuildingSimulationCategory category)
+        {
+            return category switch
+            {
+                BuildingSimulationCategory.People => BuildingPanelCategory.Housing,
+                BuildingSimulationCategory.Decoration => BuildingPanelCategory.Decoration,
+                _ => BuildingPanelCategory.Resources,
+            };
         }
 
         Sprite ResolveSlotIcon(BuildingSlotData slot)
