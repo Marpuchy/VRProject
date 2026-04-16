@@ -74,3 +74,11 @@ crashlytics-build.properties
 # JetBrains IDEs (IntelliJ, Rider, etc.)
 .idea/
 .idea/**
+
+# Large 3D source files
+Assets/3dModels/uploads_files_3686903_LowPoly_City_01/LowPoly_City_01.blend
+Assets/3dModels/uploads_files_3686903_LowPoly_City_01/LowPoly_City_01.blend1
+Assets/3dModels/uploads_files_3686903_LowPoly_City_01Readyfbx/LowPoly_City_01Ready.fbx
+
+# Optional: ignore all backup/source files of this type
+*.blend1
