@@ -508,8 +508,8 @@ MonoBehaviour:
   m_AutoResolveMissingTextReferences: 1
   m_ClampTextInsideParentRect: 1
   m_TextClampPadding: 14
-  m_TargetCanvas: {fileID: 0}
-  m_PanelRootOverride: {fileID: 0}
+  m_TargetCanvas: {fileID: 1506535262}
+  m_PanelRootOverride: {fileID: 341859028}
   m_OrganizeExistingPanelOnAwake: 1
   m_CreateMissingRowsIfNeeded: 1
   m_CreateMissingIconPlaceholders: 1
@@ -522,9 +522,9 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_RowSpacing: 0
-  m_RowHeight: 0
-  m_ResourcesRowHeight: 0
-  m_IconSize: {x: 0, y: 0}
+  m_RowHeight: 18
+  m_ResourcesRowHeight: 48
+  m_IconSize: {x: 11, y: 11}
   m_MoneyIcon: {fileID: 1779004780}
   m_HappinessIcon: {fileID: 0}
   m_PopulationIcon: {fileID: 0}
