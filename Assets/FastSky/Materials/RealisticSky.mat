@@ -55,7 +55,7 @@ Material:
     - _Anisotropy: 0.76
     - _B: -2
     - _CloudAnisotropy: 0.9
-    - _CloudBrightness: 0.23044431
+    - _CloudBrightness: 0.12197639
     - _CloudDensity: 2
     - _CloudDensitySmoothness: 1
     - _CloudHeight: 0
@@ -81,7 +81,7 @@ Material:
     - _Saturation: 1
     - _ScaledHeight: 8
     - _ScatterStrength: 20
-    - _StarBrightness: 1.0782228
+    - _StarBrightness: 1.5120945
     - _StarJitterSpeed: 0.1
     - _StarRotateSpeed: 5
     - _StarScale: 2
@@ -90,7 +90,7 @@ Material:
     - _StarThreshold: 20
     - _Step: 0.6
     - _SunIntensity: 100
-    - _SunSize: 0.1
+    - _SunSize: 0.096
     - _WaveLength: 0
     - _Wavelength: 0
     - _X: 1
@@ -100,7 +100,7 @@ Material:
     - _Colour: {r: 1, g: 1, b: 1, a: 1}
     - _Colour_Toggle: {r: 100, g: 100, b: 100, a: 0}
     - _Colour_Weights: {r: 1, g: 1, b: 1, a: 0}
-    - _DayColour: {r: 1, g: 1, b: 1, a: 1}
+    - _DayColour: {r: 0.66993195, g: 0.61729187, b: 0.61729187, a: 1}
     - _DensityRemap: {r: 0.1, g: 2, b: 0, a: 0}
     - _EveningColour: {r: 1, g: 0.5019609, b: 0.5019608, a: 1}
     - _ScatteringCoefficients: {r: 5.8, g: 13.5, b: 33.1, a: 0}
