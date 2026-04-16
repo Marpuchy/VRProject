@@ -1,8 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -89,6 +91,10 @@ namespace CityBuilderVR
         [SerializeField] Vector3 m_FollowLocalPositionOffset = new(0f, -0.12f, 1.7f);
         [SerializeField] Vector3 m_FollowLocalEulerOffset = Vector3.zero;
 
+        [Header("VR Input")]
+        [Tooltip("Assign XRI Default Input Actions asset. Enables XRI Interaction action maps so VR controller triggers fire UI press events in builds.")]
+        [SerializeField] InputActionAsset m_XRIActionAsset;
+
         [Header("Events")]
         [SerializeField] BuildingSlotSelectedEvent m_OnSlotSelected = new();
         [SerializeField] BuildingPrefabSelectedEvent m_OnPrefabSelected = new();
@@ -122,22 +128,70 @@ namespace CityBuilderVR
                 BuildPanel();
             }
 
-            FixVRUISetup();
+            EnableXRIActionMaps();
+            StartCoroutine(FixVRUISetupCoroutine());
         }
 
-        void FixVRUISetup()
+        // Enables the XRI Interaction action maps so VR controller triggers register as
+        // UI press events. In the editor, XR Interaction Simulator does this automatically.
+        // In builds, the local XR rig has no InputActionManager, so we must enable maps here
+        // before the VRMP network player (which has InputActionManager) spawns asynchronously.
+        void EnableXRIActionMaps()
+        {
+            if (m_XRIActionAsset != null)
+            {
+                foreach (var map in m_XRIActionAsset.actionMaps)
+                {
+                    if (map.name.IndexOf("Interaction", StringComparison.OrdinalIgnoreCase) >= 0)
+                        map.Enable();
+                }
+                return;
+            }
+
+            // Fallback: scan all loaded InputActionAssets for XRI Interaction maps.
+            foreach (var asset in Resources.FindObjectsOfTypeAll<InputActionAsset>())
+            {
+                bool foundAny = false;
+                foreach (var map in asset.actionMaps)
+                {
+                    if (map.name.IndexOf("XRI", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                        map.name.IndexOf("Interaction", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        map.Enable();
+                        foundAny = true;
+                    }
+                }
+                if (foundAny) break;
+            }
+        }
+
+        // Polls until XROrigin is available (spawned async by VRMP) and wires it into
+        // InputSystemUIInputModule so the scene-level EventSystem can handle XR raycasts.
+        IEnumerator FixVRUISetupCoroutine()
         {
             if (m_TargetCanvas != null && m_TargetCanvas.renderMode == RenderMode.WorldSpace && m_TargetCanvas.worldCamera == null)
             {
                 m_TargetCanvas.worldCamera = Camera.main;
             }
 
-            var inputModule = FindAnyObjectByType<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-            if (inputModule != null && inputModule.xrTrackingOrigin == null)
+            const float k_Timeout = 30f;
+            float elapsed = 0f;
+
+            while (elapsed < k_Timeout)
             {
+                var inputModule = FindAnyObjectByType<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+                if (inputModule == null || inputModule.xrTrackingOrigin != null)
+                    yield break;
+
                 var xrOrigin = FindAnyObjectByType<Unity.XR.CoreUtils.XROrigin>();
                 if (xrOrigin != null)
+                {
                     inputModule.xrTrackingOrigin = xrOrigin.Origin.transform;
+                    yield break;
+                }
+
+                yield return new WaitForSeconds(0.5f);
+                elapsed += 0.5f;
             }
         }
 
