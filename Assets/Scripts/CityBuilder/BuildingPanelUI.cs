@@ -393,6 +393,19 @@ namespace CityBuilderVR
             panelRoot.sizeDelta = m_PanelSize;
             panelRoot.anchoredPosition = m_PanelAnchorOffset;
 
+            // When the canvas is a static controller-attached child (not world-space follow),
+            // resize it to match the panel and lift its center so the panel bottom sits just
+            // above the controller instead of below it.
+            // Formula: canvas center Y = panelHeight/2 - anchorOffsetY so that
+            // canvas.bottom + anchorOffsetY = 0 (controller origin).
+            if (!m_FollowPlayerInWorldSpace && panelRoot.parent is RectTransform canvasRect)
+            {
+                canvasRect.sizeDelta = m_PanelSize;
+                canvasRect.anchoredPosition = new Vector2(
+                    canvasRect.anchoredPosition.x,
+                    m_PanelSize.y * 0.5f - m_PanelAnchorOffset.y);
+            }
+
             if (!panelRoot.TryGetComponent(out Image panelImage))
             {
                 panelImage = panelRoot.gameObject.AddComponent<Image>();
