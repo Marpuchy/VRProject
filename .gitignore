@@ -82,3 +82,48 @@ Assets/3dModels/uploads_files_3686903_LowPoly_City_01Readyfbx/LowPoly_City_01Rea
 
 # Optional: ignore all backup/source files of this type
 *.blend1
+
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+MemoryCaptures/
+Recordings/
+
+# Asset import cache
+Assets/AssetStoreTools*
+
+# Visual Studio / Rider
+.vs/
+.idea/
+.gradle/
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large source / backup files
+*.blend1
+
+Assets/3dModels/uploads_files_3686903_LowPoly_City_01/LowPoly_City_01.blend
+Assets/3dModels/uploads_files_3686903_LowPoly_City_01/LowPoly_City_01.blend1
+Assets/3dModels/uploads_files_3686903_LowPoly_City_01Readyfbx/LowPoly_City_01Ready.fbx
