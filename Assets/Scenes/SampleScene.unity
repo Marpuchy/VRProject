@@ -1975,6 +1975,57 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1697528802
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1697528804}
+  - component: {fileID: 1697528803}
+  m_Layer: 0
+  m_Name: AmbientMusic
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1697528803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1697528802}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd219230e3cf2bd7c9b264f1b859d4fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AmbientMusicController
+  m_DayMusic: {fileID: 8300000, guid: ce8f944ab8b6d328ab08ef4a3b0c6de0, type: 3}
+  m_NightMusic: {fileID: 8300000, guid: 8e6d6f977acc72d7c98a73ceaddadd73, type: 3}
+  m_DayStartHour: 6
+  m_NightStartHour: 20
+  m_CrossfadeDuration: 2
+  m_DayVolume: 0.67
+  m_NightVolume: 0.3
+--- !u!4 &1697528804
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1697528802}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.29205, y: 0.09263, z: -7.53104}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1779004778
 GameObject:
   m_ObjectHideFlags: 0
@@ -2082,6 +2133,7 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: 1d619e124add6708d810ce9dea817a71, type: 2}
   controller: {fileID: 1855965666}
   tickManager: {fileID: 1539277029}
+  ambientMusic: {fileID: 1697528803}
 --- !u!4 &1836068954
 Transform:
   m_ObjectHideFlags: 0
@@ -2410,7 +2462,7 @@ MonoBehaviour:
   m_BuildPanelOnStart: 1
   m_CreateFallbackLayoutIfMissing: 1
   m_PanelSize: {x: 1500, y: 230}
-  m_PanelAnchorOffset: {x: 0, y: 24}
+  m_PanelAnchorOffset: {x: 0, y: 0}
   m_SlotSize: {x: 104, y: 104}
   m_SlotSpacing: 30
   m_FallbackCanvasDistance: 1.7
@@ -2684,6 +2736,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5481931946195657416, guid: b2f41eac1cbd10af29698a01f6bec89b,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: e1f58e95188cd081791e25e107b269a2, type: 2}
     - target: {fileID: 9078904719452255791, guid: b2f41eac1cbd10af29698a01f6bec89b,
         type: 3}
       propertyPath: m_Enabled
@@ -3646,3 +3703,4 @@ SceneRoots:
   - {fileID: 1575246708}
   - {fileID: 2035941040}
   - {fileID: 1057178318}
+  - {fileID: 1697528804}
