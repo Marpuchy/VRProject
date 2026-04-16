@@ -505,47 +505,7 @@ MonoBehaviour:
   m_HappinessText: {fileID: 567871459}
   m_LevelText: {fileID: 1578758274}
   m_ResourcesText: {fileID: 349624013}
-  m_AutoResolveMissingTextReferences: 1
-  m_ClampTextInsideParentRect: 1
-  m_TextClampPadding: 14
-  m_TargetCanvas: {fileID: 1506535262}
-  m_PanelRootOverride: {fileID: 341859028}
-  m_OrganizeExistingPanelOnAwake: 1
-  m_CreateMissingRowsIfNeeded: 1
-  m_CreateMissingIconPlaceholders: 1
-  m_ApplyPanelBackground: 1
-  m_PanelColor: {r: 0.08, g: 0.1, b: 0.13, a: 0.86}
-  m_TextColor: {r: 0.95, g: 0.96, b: 0.98, a: 1}
-  m_PanelPadding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
-  m_RowSpacing: 0
-  m_RowHeight: 18
-  m_ResourcesRowHeight: 48
-  m_IconSize: {x: 11, y: 11}
-  m_MoneyIcon: {fileID: 1779004780}
-  m_HappinessIcon: {fileID: 0}
-  m_PopulationIcon: {fileID: 0}
-  m_LevelIcon: {fileID: 0}
-  m_ResourcesIcon: {fileID: 455153755}
-  m_MoneyIconSprite: {fileID: 21300000, guid: 31961c768a7b4e34799252795a00af34, type: 3}
-  m_HappinessIconSprite: {fileID: 21300000, guid: 09c2858178d2c31409c17fcb03cbf2a6,
-    type: 3}
-  m_PopulationIconSprite: {fileID: 21300000, guid: dc757b9fdb50c3a44837fa6e679ad3ec,
-    type: 3}
-  m_LevelIconSprite: {fileID: 21300000, guid: 96232660196dc3e4ead386c4a1ea1088, type: 3}
-  m_ResourcesIconSprite: {fileID: 21300000, guid: 83ac55f3858c31749911b36866161f55,
-    type: 3}
-  m_IconTint: {r: 0, g: 0, b: 0, a: 0}
-  m_EmptyIconTint: {r: 0, g: 0, b: 0, a: 0}
-  m_PinHudToPlayerEyes: 1
-  m_UseWorldSpaceCanvas: 1
-  m_WorldCanvasSize: {x: 1200, y: 300}
-  m_WorldCanvasScale: 0.0012
-  m_EyeLocalPositionOffset: {x: 0.4, y: 0.05, z: 0.62}
-  m_EyeLocalEulerOffset: {x: 0, y: 0, z: 0}
+  m_BuildingsText: {fileID: 0}
 --- !u!114 &341859030
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1320,7 +1280,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1003942428}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -0.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3547,7 +3507,7 @@ MonoBehaviour:
   m_InteractionManager: {fileID: 0}
   m_Colliders: []
   m_InteractionLayers:
-    m_Bits: 1
+    m_Bits: 0
   m_DistanceCalculationMode: 1
   m_SelectMode: 0
   m_FocusMode: 1

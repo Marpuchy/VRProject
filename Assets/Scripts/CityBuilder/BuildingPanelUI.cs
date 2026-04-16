@@ -121,6 +121,24 @@ namespace CityBuilderVR
             {
                 BuildPanel();
             }
+
+            FixVRUISetup();
+        }
+
+        void FixVRUISetup()
+        {
+            if (m_TargetCanvas != null && m_TargetCanvas.renderMode == RenderMode.WorldSpace && m_TargetCanvas.worldCamera == null)
+            {
+                m_TargetCanvas.worldCamera = Camera.main;
+            }
+
+            var inputModule = FindAnyObjectByType<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            if (inputModule != null && inputModule.xrTrackingOrigin == null)
+            {
+                var xrOrigin = FindAnyObjectByType<Unity.XR.CoreUtils.XROrigin>();
+                if (xrOrigin != null)
+                    inputModule.xrTrackingOrigin = xrOrigin.Origin.transform;
+            }
         }
 
         void LateUpdate()
