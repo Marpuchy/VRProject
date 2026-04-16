@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   version: 10
 --- !u!21 &2100000
 Material:
@@ -34,7 +34,7 @@ Material:
   stringTagMap: {}
   disabledShaderPasses:
   - MOTIONVECTORS
-  m_LockedProperties:
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -55,7 +55,7 @@ Material:
     - _Anisotropy: 0.76
     - _B: -2
     - _CloudAnisotropy: 0.9
-    - _CloudBrightness: 0.12197639
+    - _CloudBrightness: 0.44237563
     - _CloudDensity: 2
     - _CloudDensitySmoothness: 1
     - _CloudHeight: 0
@@ -81,7 +81,7 @@ Material:
     - _Saturation: 1
     - _ScaledHeight: 8
     - _ScatterStrength: 20
-    - _StarBrightness: 1.5120945
+    - _StarBrightness: 0.23049748
     - _StarJitterSpeed: 0.1
     - _StarRotateSpeed: 5
     - _StarScale: 2

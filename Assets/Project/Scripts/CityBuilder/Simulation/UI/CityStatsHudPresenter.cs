@@ -19,19 +19,17 @@ namespace CityBuilderVR
         [SerializeField] bool m_AutoResolveMissingTextReferences = true;
         [SerializeField] bool m_ClampTextInsideParentRect = true;
         [SerializeField, Min(0f)] float m_TextClampPadding = 14f;
-<<<<<<< Updated upstream
-=======
 
         [Header("Existing UI Layout")]
         [SerializeField] Canvas m_TargetCanvas;
         [SerializeField] RectTransform m_PanelRootOverride;
         [SerializeField] bool m_OrganizeExistingPanelOnAwake = true;
-        [SerializeField] bool m_CreateMissingRowsIfNeeded;
+        [SerializeField] bool m_CreateMissingRowsIfNeeded = true;
         [SerializeField] bool m_CreateMissingIconPlaceholders = true;
         [SerializeField] bool m_ApplyPanelBackground;
         [SerializeField] Color m_PanelColor = new(0.08f, 0.1f, 0.13f, 0.86f);
         [SerializeField] Color m_TextColor = new(0.95f, 0.96f, 0.98f, 1f);
-        [SerializeField] RectOffset m_PanelPadding = new(18, 18, 14, 14);
+        [SerializeField] RectOffset m_PanelPadding;
         [SerializeField, Min(0f)] float m_RowSpacing = 6f;
         [SerializeField, Min(18f)] float m_RowHeight = 34f;
         [SerializeField, Min(48f)] float m_ResourcesRowHeight = 130f;
@@ -60,7 +58,10 @@ namespace CityBuilderVR
         [SerializeField, Min(0.0001f)] float m_WorldCanvasScale = 0.0012f;
         [SerializeField] Vector3 m_EyeLocalPositionOffset = new(0f, -0.1f, 0.62f);
         [SerializeField] Vector3 m_EyeLocalEulerOffset = Vector3.zero;
->>>>>>> Stashed changes
+
+        Canvas m_HudCanvas;
+        Camera m_MainCamera;
+        Transform m_EyeAnchor;
 
         readonly StringBuilder m_StringBuilder = new();
 
@@ -74,6 +75,7 @@ namespace CityBuilderVR
             }
 
             NormalizeTextVisibilityAndLayout();
+            TryAttachHudToPlayerEyes();
         }
 
         void OnEnable()
@@ -491,8 +493,6 @@ namespace CityBuilderVR
             m_ResourcesText ??= FindTextByName("resources", "resource");
         }
 
-<<<<<<< Updated upstream
-=======
         void TryAttachHudToPlayerEyes()
         {
             if (!Application.isPlaying || !m_PinHudToPlayerEyes)
@@ -548,7 +548,6 @@ namespace CityBuilderVR
             canvasRect.localScale = Vector3.one * m_WorldCanvasScale;
         }
 
->>>>>>> Stashed changes
         TMP_Text FindTextByName(params string[] tokens)
         {
             if (tokens == null || tokens.Length == 0)
