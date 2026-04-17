@@ -14,6 +14,9 @@ namespace CityBuilderVR
         [SerializeField] GameObject m_ModelPrefab;
         [SerializeField] GameObject m_BuildPrefab;
         [SerializeField] float m_ModelVerticalOffset;
+        [SerializeField] bool m_GenerateGroundPatch;
+        [SerializeField] Material m_GroundPatchMaterial;
+        [SerializeField, Min(0.1f)] float m_GroundPatchRadius = 1f;
 
         [Header("Legacy Direct Prefab")]
         [SerializeField] GameObject m_Prefab;
@@ -44,6 +47,9 @@ namespace CityBuilderVR
         public GameObject BuildPrefab => m_BuildPrefab;
         public GameObject Prefab => ResolveSpawnPrefab();
         public float ModelVerticalOffset => m_ModelVerticalOffset;
+        public bool GenerateGroundPatch => m_GenerateGroundPatch;
+        public Material GroundPatchMaterial => m_GroundPatchMaterial;
+        public float GroundPatchRadius => Mathf.Max(0.1f, m_GroundPatchRadius);
         public bool StartUnlocked => m_StartUnlocked;
         public int RequiredLevel => Mathf.Max(1, m_RequiredLevel);
         public int BuildCost => m_BuildCost;
@@ -185,6 +191,7 @@ namespace CityBuilderVR
             m_ExperienceReward = Mathf.Max(0, m_ExperienceReward);
             m_PopulationCapacity = Mathf.Max(0, m_PopulationCapacity);
             m_IncomePerTick = Mathf.Max(0, m_IncomePerTick);
+            m_GroundPatchRadius = Mathf.Max(0.1f, m_GroundPatchRadius);
 
             if (m_ProvidedResourceAreas != null)
             {

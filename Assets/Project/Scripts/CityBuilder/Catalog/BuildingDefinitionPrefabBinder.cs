@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CityBuilderVR
 {
@@ -31,20 +32,25 @@ namespace CityBuilderVR
                 gameObject.name = definition.DisplayName;
             }
 
-            RebuildModel(definition.ModelPrefab, definition.ModelVerticalOffset);
+            RebuildModel(definition);
         }
 
-        void RebuildModel(GameObject modelPrefab, float verticalOffset)
+        void RebuildModel(BuildingDefinitionSO definition)
         {
             ClearRuntimeModel();
 
-            if (modelPrefab == null)
+            if (definition == null)
             {
                 return;
             }
 
             Transform modelRoot = ResolveModelRoot();
-            GameObject modelInstance = Instantiate(modelPrefab, modelRoot);
+            GameObject modelInstance = CreateModelInstance(definition, modelRoot);
+            if (modelInstance == null)
+            {
+                return;
+            }
+
             Transform modelTransform = modelInstance.transform;
             modelTransform.localPosition = Vector3.zero;
             modelTransform.localRotation = Quaternion.identity;
@@ -54,7 +60,7 @@ namespace CityBuilderVR
                 SetLayerRecursively(modelTransform, gameObject.layer);
             }
 
-            AlignModel(modelTransform, verticalOffset);
+            AlignModel(modelTransform, definition.ModelVerticalOffset);
 
             if (m_SyncRootBoxColliderToModel)
             {
@@ -62,6 +68,88 @@ namespace CityBuilderVR
             }
 
             m_RuntimeModelInstance = modelInstance;
+        }
+
+        GameObject CreateModelInstance(BuildingDefinitionSO definition, Transform modelRoot)
+        {
+            if (definition == null || modelRoot == null)
+            {
+                return null;
+            }
+
+            if (definition.GenerateGroundPatch)
+            {
+                return CreateGroundPatchInstance(definition, modelRoot);
+            }
+
+            if (definition.ModelPrefab == null)
+            {
+                return null;
+            }
+
+            return Instantiate(definition.ModelPrefab, modelRoot);
+        }
+
+        static GameObject CreateGroundPatchInstance(BuildingDefinitionSO definition, Transform parent)
+        {
+            GameObject patch = new("GroundPatch");
+            patch.transform.SetParent(parent, false);
+
+            MeshFilter meshFilter = patch.AddComponent<MeshFilter>();
+            MeshRenderer meshRenderer = patch.AddComponent<MeshRenderer>();
+            meshFilter.sharedMesh = CreateGroundPatchMesh(definition.GroundPatchRadius, 40);
+            meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            meshRenderer.receiveShadows = false;
+
+            if (definition.GroundPatchMaterial != null)
+            {
+                meshRenderer.sharedMaterial = definition.GroundPatchMaterial;
+            }
+
+            return patch;
+        }
+
+        static Mesh CreateGroundPatchMesh(float radius, int segments)
+        {
+            int safeSegments = Mathf.Max(12, segments);
+            Vector3[] vertices = new Vector3[safeSegments + 1];
+            Vector3[] normals = new Vector3[safeSegments + 1];
+            Vector2[] uvs = new Vector2[safeSegments + 1];
+            int[] triangles = new int[safeSegments * 3];
+
+            vertices[0] = Vector3.zero;
+            normals[0] = Vector3.up;
+            uvs[0] = new Vector2(0.5f, 0.5f);
+
+            float angleStep = Mathf.PI * 2f / safeSegments;
+            for (int i = 0; i < safeSegments; i++)
+            {
+                float angle = i * angleStep;
+                float x = Mathf.Cos(angle) * radius;
+                float z = Mathf.Sin(angle) * radius;
+                int vertexIndex = i + 1;
+
+                vertices[vertexIndex] = new Vector3(x, 0f, z);
+                normals[vertexIndex] = Vector3.up;
+                uvs[vertexIndex] = new Vector2((x / (radius * 2f)) + 0.5f, (z / (radius * 2f)) + 0.5f);
+
+                int triangleIndex = i * 3;
+                triangles[triangleIndex] = 0;
+                triangles[triangleIndex + 1] = vertexIndex;
+                triangles[triangleIndex + 2] = i == safeSegments - 1 ? 1 : vertexIndex + 1;
+            }
+
+            Mesh mesh = new()
+            {
+                name = "GroundPatchMesh"
+            };
+            mesh.hideFlags = HideFlags.DontSave;
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.uv = uvs;
+            mesh.triangles = triangles;
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         Transform ResolveModelRoot()
@@ -91,6 +179,11 @@ namespace CityBuilderVR
                 return;
             }
 
+            if (m_RuntimeModelInstance.TryGetComponent(out MeshFilter meshFilter))
+            {
+                DestroyGeneratedMesh(meshFilter.sharedMesh);
+            }
+
             if (Application.isPlaying)
             {
                 Destroy(m_RuntimeModelInstance);
@@ -101,6 +194,23 @@ namespace CityBuilderVR
             }
 
             m_RuntimeModelInstance = null;
+        }
+
+        static void DestroyGeneratedMesh(Mesh mesh)
+        {
+            if (mesh == null || (mesh.hideFlags & HideFlags.DontSave) == 0)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(mesh);
+            }
+            else
+            {
+                DestroyImmediate(mesh);
+            }
         }
 
         void AlignModel(Transform modelTransform, float verticalOffset)

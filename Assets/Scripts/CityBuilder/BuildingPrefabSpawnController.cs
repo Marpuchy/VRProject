@@ -123,6 +123,7 @@ namespace CityBuilderVR
         {
             ResolveReferences();
             ResolvePreviewPlacementSource();
+            RetrofitPlacedBuildings();
         }
 
         void OnEnable()
@@ -1128,8 +1129,45 @@ namespace CityBuilderVR
                 return;
             }
 
+            EnsureScaleHandles(instance);
             RemovePlacementInteractionComponents(instance);
             ConfigureStructureBodiesAsStatic(instance);
+        }
+
+        void EnsureScaleHandles(GameObject instance)
+        {
+            if (!m_AddScaleHandlesIfMissing || instance == null)
+            {
+                return;
+            }
+
+            GridDefinition grid = ResolveGridDefinition();
+            RuntimeScaleHandleFactory.EnsureHandles(
+                instance,
+                grid,
+                m_ScaleHandleVisualSize,
+                m_ScaleHandleOffset);
+        }
+
+        void RetrofitPlacedBuildings()
+        {
+            PlacedBuildingRuntime[] placedBuildings = FindObjectsByType<PlacedBuildingRuntime>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+
+            for (int i = 0; i < placedBuildings.Length; i++)
+            {
+                PlacedBuildingRuntime placedBuilding = placedBuildings[i];
+                if (placedBuilding == null)
+                {
+                    continue;
+                }
+
+                GameObject instance = placedBuilding.gameObject;
+                EnsureScaleHandles(instance);
+                RemovePlacementInteractionComponents(instance);
+                ConfigureStructureBodiesAsStatic(instance);
+            }
         }
 
         void RemovePlacementInteractionComponents(GameObject instance)
@@ -1142,25 +1180,6 @@ namespace CityBuilderVR
             DestroyComponents(instance.GetComponentsInChildren<GridMovementConstraint>(true));
             DestroyComponents(instance.GetComponentsInChildren<HorizontalGrabConstraint>(true));
             DestroyComponents(instance.GetComponentsInChildren<XRGrabInteractable>(true));
-            DestroyComponents(instance.GetComponentsInChildren<HandleManager>(true));
-
-            ScaleHandle[] scaleHandles = instance.GetComponentsInChildren<ScaleHandle>(true);
-            for (int i = 0; i < scaleHandles.Length; i++)
-            {
-                ScaleHandle scaleHandle = scaleHandles[i];
-                if (scaleHandle == null)
-                {
-                    continue;
-                }
-
-                DestroyGameObject(scaleHandle.gameObject);
-            }
-
-            Transform handlesRoot = instance.transform.Find("Handlers");
-            if (handlesRoot != null)
-            {
-                DestroyGameObject(handlesRoot.gameObject);
-            }
         }
 
         void ConfigureStructureBodiesAsStatic(GameObject instance)

@@ -204,6 +204,9 @@ MonoBehaviour:
   m_AddGrabInteractableIfMissing: 1
   m_AddGridMovementConstraintIfMissing: 1
   m_AddHorizontalGrabConstraintIfMissing: 1
+  m_AddScaleHandlesIfMissing: 1
+  m_ScaleHandleVisualSize: 0.04
+  m_ScaleHandleOffset: 0.05
   m_ConfigurePhysicsLikeTestCube: 1
   m_ConfigureGrabLikeTestCube: 1
   m_EnableGravityOnSpawn: 1

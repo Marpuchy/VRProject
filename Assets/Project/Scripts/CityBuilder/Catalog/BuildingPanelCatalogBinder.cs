@@ -21,6 +21,7 @@ namespace CityBuilderVR
         [SerializeField] BuildingDefinitionSelectedEvent m_OnDefinitionSelected = new();
 
         readonly List<BuildingDefinitionSO> m_SlotDefinitions = new();
+        static readonly Dictionary<int, Sprite> s_RuntimeTextureIconCache = new();
 
         public BuildingDefinitionSelectedEvent OnDefinitionSelected => m_OnDefinitionSelected;
         public BuildingCatalogSO Catalog => m_Catalog;
@@ -111,7 +112,7 @@ namespace CityBuilderVR
                     {
                         slotName = definition.DisplayName,
                         buildingPrefab = definition.Prefab,
-                        icon = definition.Icon,
+                        icon = ResolveSlotIcon(definition),
                         category = BuildingPanelUI.FromSimulationCategory(definition.Category)
                     });
                     m_SlotDefinitions.Add(definition);
@@ -172,6 +173,40 @@ namespace CityBuilderVR
             {
                 m_OnDefinitionSelected.Invoke(definition);
             }
+        }
+
+        static Sprite ResolveSlotIcon(BuildingDefinitionSO definition)
+        {
+            if (definition == null)
+            {
+                return null;
+            }
+
+            if (definition.Icon != null)
+            {
+                return definition.Icon;
+            }
+
+            if (definition.GroundPatchMaterial != null &&
+                definition.GroundPatchMaterial.mainTexture is Texture2D texture)
+            {
+                int textureId = texture.GetInstanceID();
+                if (s_RuntimeTextureIconCache.TryGetValue(textureId, out Sprite cachedIcon) && cachedIcon != null)
+                {
+                    return cachedIcon;
+                }
+
+                Sprite previewSprite = Sprite.Create(
+                    texture,
+                    new Rect(0f, 0f, texture.width, texture.height),
+                    new Vector2(0.5f, 0.5f),
+                    100f);
+                previewSprite.name = $"Preview_{definition.name}";
+                s_RuntimeTextureIconCache[textureId] = previewSprite;
+                return previewSprite;
+            }
+
+            return null;
         }
     }
 }
