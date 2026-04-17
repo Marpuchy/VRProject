@@ -58,6 +58,8 @@ namespace CityBuilder
         private Transform _cachedHead;
         private Transform _cachedPlayerRoot;
 
+        public float CurrentHalfSize => GetEffectiveHalfSize();
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void EnsureBoundaryExists()
         {
@@ -91,6 +93,28 @@ namespace CityBuilder
 
             Vector3 levelManagerPosition = levelManager.transform.position;
             return new Vector3(levelManagerPosition.x, 0f, levelManagerPosition.z);
+        }
+
+        public static bool TryGetActiveBoundary(out MapBoundary boundary)
+        {
+            boundary = FindFirstObjectByType<MapBoundary>();
+            return boundary != null;
+        }
+
+        public bool ContainsWorldPosition(Vector3 worldPosition, float inset = 0f)
+        {
+            float half = GetUsableHalfSize(inset);
+            Vector3 localPoint = transform.InverseTransformPoint(worldPosition);
+            return Mathf.Abs(localPoint.x) <= half && Mathf.Abs(localPoint.z) <= half;
+        }
+
+        public Vector3 ClampWorldPosition(Vector3 worldPosition, float inset = 0f)
+        {
+            float half = GetUsableHalfSize(inset);
+            Vector3 localPoint = transform.InverseTransformPoint(worldPosition);
+            localPoint.x = Mathf.Clamp(localPoint.x, -half, half);
+            localPoint.z = Mathf.Clamp(localPoint.z, -half, half);
+            return transform.TransformPoint(localPoint);
         }
 
         // ──────────────────────────────────────────────────────────────────────
@@ -163,6 +187,16 @@ namespace CityBuilder
 
             Vector3 worldCorrection = transform.TransformVector(localCorrection);
             playerRoot.position += worldCorrection;
+        }
+
+        private float GetEffectiveHalfSize()
+        {
+            return Application.isPlaying ? _currentHalfSize : _initialHalfSize;
+        }
+
+        private float GetUsableHalfSize(float inset)
+        {
+            return Mathf.Max(0.01f, GetEffectiveHalfSize() - Mathf.Max(0f, inset));
         }
 
         // ──────────────────────────────────────────────────────────────────────

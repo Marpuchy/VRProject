@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CityBuilder;
 using UnityEngine;
 
 namespace CityBuilderVR
@@ -7,6 +8,7 @@ namespace CityBuilderVR
     public class BuildZoneService : MonoBehaviour
     {
         [SerializeField] List<BuildZoneArea> m_Zones = new();
+        MapBoundary m_MapBoundary;
 
         void Awake()
         {
@@ -16,9 +18,16 @@ namespace CityBuilderVR
         public bool IsBuildAllowed(Vector3 worldPosition, int currentLevel, out string reason)
         {
             DiscoverZonesIfNeeded();
+            MapBoundary mapBoundary = ResolveMapBoundary();
 
             if (m_Zones.Count == 0)
             {
+                if (mapBoundary != null && !mapBoundary.ContainsWorldPosition(worldPosition))
+                {
+                    reason = "This cell is outside the map boundary.";
+                    return false;
+                }
+
                 reason = null;
                 return true;
             }
@@ -43,6 +52,12 @@ namespace CityBuilderVR
             if (currentLevel < containingZone.RequiredLevel)
             {
                 reason = $"Zone {containingZone.ZoneId} unlocks at level {containingZone.RequiredLevel}.";
+                return false;
+            }
+
+            if (mapBoundary != null && !mapBoundary.ContainsWorldPosition(worldPosition))
+            {
+                reason = "This cell is outside the map boundary.";
                 return false;
             }
 
@@ -83,6 +98,16 @@ namespace CityBuilderVR
                     m_Zones.Add(discoveredZones[i]);
                 }
             }
+        }
+
+        MapBoundary ResolveMapBoundary()
+        {
+            if (m_MapBoundary == null)
+            {
+                MapBoundary.TryGetActiveBoundary(out m_MapBoundary);
+            }
+
+            return m_MapBoundary;
         }
     }
 }

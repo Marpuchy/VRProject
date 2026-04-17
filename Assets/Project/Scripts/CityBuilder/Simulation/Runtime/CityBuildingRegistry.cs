@@ -15,10 +15,7 @@ namespace CityBuilderVR
 
         void Awake()
         {
-            if (m_GridDefinition == null)
-            {
-                m_GridDefinition = FindFirstObjectByType<GridDefinition>();
-            }
+            ResolveGridDefinition();
         }
 
         public bool IsCellOccupied(Vector3 worldPosition, out PlacedBuildingRuntime runtime)
@@ -55,6 +52,7 @@ namespace CityBuilderVR
 
             Vector3 snappedPosition = CellToWorld(cell, worldPosition.y);
             runtime.Initialize(this, definition, cell, snappedPosition);
+            ApplySnappedTransform(instance, snappedPosition);
 
             if (!m_Buildings.Contains(runtime))
             {
@@ -120,6 +118,7 @@ namespace CityBuilderVR
 
         Vector2Int WorldToCell(Vector3 worldPosition)
         {
+            ResolveGridDefinition();
             if (m_GridDefinition == null)
             {
                 return new Vector2Int(
@@ -136,6 +135,7 @@ namespace CityBuilderVR
 
         Vector3 CellToWorld(Vector2Int cell, float originalY)
         {
+            ResolveGridDefinition();
             if (m_GridDefinition == null)
             {
                 return new Vector3(cell.x * 0.1f, originalY, cell.y * 0.1f);
@@ -147,6 +147,31 @@ namespace CityBuilderVR
                 origin.x + cell.x * cellSize,
                 originalY,
                 origin.z + cell.y * cellSize);
+        }
+
+        static void ApplySnappedTransform(GameObject instance, Vector3 snappedPosition)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            if (instance.TryGetComponent(out Rigidbody body))
+            {
+                body.position = snappedPosition;
+                body.linearVelocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+            }
+
+            instance.transform.position = snappedPosition;
+        }
+
+        void ResolveGridDefinition()
+        {
+            if (m_GridDefinition == null)
+            {
+                m_GridDefinition = FindFirstObjectByType<GridDefinition>();
+            }
         }
     }
 }

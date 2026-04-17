@@ -15,8 +15,9 @@ MonoBehaviour:
   m_Id: water_tower
   m_DisplayName: Water Tower
   m_Icon: {fileID: 21300000, guid: 35b5b5d2dfdda7e42b2b774157118d19, type: 3}
-  m_ModelPrefab: {fileID: 0}
-  m_BuildPrefab: {fileID: 0}
+  m_ModelPrefab: {fileID: 776400471641067771, guid: cc566154ca4fcb8499ad03b824c69b61, type: 3}
+  m_BuildPrefab: {fileID: 1000000000000000000, guid: 6db28305b7514a6e8e6f8324f953b632,
+    type: 3}
   m_Prefab: {fileID: 776400471641067771, guid: cc566154ca4fcb8499ad03b824c69b61, type: 3}
   m_StartUnlocked: 1
   m_RequiredLevel: 1

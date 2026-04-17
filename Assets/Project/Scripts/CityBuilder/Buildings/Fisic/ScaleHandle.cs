@@ -34,6 +34,11 @@ public sealed class ScaleHandle : MonoBehaviour
     public void SetGrid(GridDefinition grid)
     {
         _grid = grid;
+
+        if (_grid != null && _targetCube != null && (_interactable == null || !_interactable.isSelected))
+        {
+            SnapScaleToGrid();
+        }
     }
 
     public void SetDesiredWorldScale(float worldScale)
@@ -53,6 +58,7 @@ public sealed class ScaleHandle : MonoBehaviour
     {
         _interactable = GetComponent<XRSimpleInteractable>();
         CacheTargetReferences();
+        TryResolveGrid();
 
         _initialLocalScale = transform.localScale;
         _initialParentScale = transform.parent ? transform.parent.lossyScale : Vector3.one;
@@ -127,6 +133,12 @@ public sealed class ScaleHandle : MonoBehaviour
 
     private void LateUpdate()
     {
+        bool resolvedGridThisFrame = TryResolveGrid();
+        if (resolvedGridThisFrame && _targetCube != null && (_interactable == null || !_interactable.isSelected))
+        {
+            SnapScaleToGrid();
+        }
+
         if (!_keepWorldScale)
             return;
 
@@ -192,6 +204,17 @@ public sealed class ScaleHandle : MonoBehaviour
     private static float SafeDivide(float numerator, float denominator)
     {
         return Mathf.Approximately(denominator, 0f) ? 1f : numerator / denominator;
+    }
+
+    private bool TryResolveGrid()
+    {
+        if (_grid != null)
+        {
+            return false;
+        }
+
+        _grid = FindFirstObjectByType<GridDefinition>();
+        return _grid != null;
     }
 
     private bool TryGetTargetBounds(out Bounds bounds)

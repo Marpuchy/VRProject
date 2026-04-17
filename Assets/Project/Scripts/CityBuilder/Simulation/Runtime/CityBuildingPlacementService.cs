@@ -258,6 +258,7 @@ namespace CityBuilderVR
             }
 
             RebuildRuntimeRingsIfNeeded();
+            ApplyRingTransformCompensationToAll();
         }
 
         void RebuildRuntimeRingsIfNeeded()
@@ -311,6 +312,7 @@ namespace CityBuilderVR
                     ring.SetPosition(segment, point);
                 }
 
+                ApplyRingTransformCompensation(ring);
                 m_Rings.Add(ring);
             }
         }
@@ -339,6 +341,38 @@ namespace CityBuilderVR
             lineRenderer.allowOcclusionWhenDynamic = false;
             lineRenderer.material = material;
             return lineRenderer;
+        }
+
+        void ApplyRingTransformCompensationToAll()
+        {
+            for (int i = 0; i < m_Rings.Count; i++)
+            {
+                ApplyRingTransformCompensation(m_Rings[i]);
+            }
+        }
+
+        void ApplyRingTransformCompensation(LineRenderer ring)
+        {
+            if (ring == null)
+            {
+                return;
+            }
+
+            ring.transform.localScale = GetInverseLossyScale();
+        }
+
+        Vector3 GetInverseLossyScale()
+        {
+            Vector3 lossyScale = transform.lossyScale;
+            return new Vector3(
+                SafeInverse(lossyScale.x),
+                SafeInverse(lossyScale.y),
+                SafeInverse(lossyScale.z));
+        }
+
+        static float SafeInverse(float value)
+        {
+            return Mathf.Abs(value) > 0.0001f ? 1f / value : 1f;
         }
 
         void ClearRuntimeRings()

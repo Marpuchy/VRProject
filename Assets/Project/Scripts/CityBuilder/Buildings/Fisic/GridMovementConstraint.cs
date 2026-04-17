@@ -1,3 +1,4 @@
+using CityBuilder;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 
@@ -9,6 +10,7 @@ public sealed class GridMovementConstraint : MonoBehaviour
 
     private Rigidbody _rigidbody;
     private UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable _grabInteractable;
+    private MapBoundary _mapBoundary;
 
     private bool _isGrabbed;
     private float _fixedY;
@@ -18,6 +20,7 @@ public sealed class GridMovementConstraint : MonoBehaviour
     public void SetGrid(GridDefinition grid)
     {
         _grid = grid;
+        TryAlignToConstraints(preserveFixedY: false);
     }
 
     private void Awake()
@@ -25,13 +28,18 @@ public sealed class GridMovementConstraint : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody>();
         _grabInteractable = GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable>();
 
-        if (_grid == null)
-            _grid = FindFirstObjectByType<GridDefinition>();
+        ResolveSpatialDependencies();
 
         _grabInteractable.selectEntered.AddListener(OnGrab);
         _grabInteractable.selectExited.AddListener(OnRelease);
 
         _currentCell = GetCell(transform.position);
+    }
+
+    private void OnEnable()
+    {
+        ResolveSpatialDependencies();
+        TryAlignToConstraints(preserveFixedY: false);
     }
 
     private void OnDestroy()
@@ -67,6 +75,12 @@ public sealed class GridMovementConstraint : MonoBehaviour
 
     private void FixedUpdate()
     {
+        bool gridResolvedThisFrame = ResolveSpatialDependencies();
+        if (gridResolvedThisFrame && !_isGrabbed)
+        {
+            TryAlignToConstraints(preserveFixedY: false);
+        }
+
         if (!_isGrabbed)
             return;
 
@@ -91,13 +105,7 @@ public sealed class GridMovementConstraint : MonoBehaviour
 
     private void SnapImmediately()
     {
-        if (_grid == null)
-            return;
-
-        Vector3 snapped = _grid.Snap(_rigidbody.position);
-        snapped.y = _fixedY;
-
-        _rigidbody.position = snapped;
+        TryAlignToConstraints(preserveFixedY: true);
     }
 
     private Vector2Int GetCell(Vector3 worldPosition)
@@ -112,5 +120,107 @@ public sealed class GridMovementConstraint : MonoBehaviour
         int z = Mathf.RoundToInt((worldPosition.z - origin.z) / size);
 
         return new Vector2Int(x, z);
+    }
+
+    private bool ResolveSpatialDependencies()
+    {
+        bool resolvedGridThisFrame = false;
+
+        if (_grid == null)
+        {
+            _grid = FindFirstObjectByType<GridDefinition>();
+            resolvedGridThisFrame = _grid != null;
+        }
+
+        if (_mapBoundary == null)
+        {
+            MapBoundary.TryGetActiveBoundary(out _mapBoundary);
+        }
+
+        return resolvedGridThisFrame;
+    }
+
+    private void TryAlignToConstraints(bool preserveFixedY)
+    {
+        if (_rigidbody == null)
+            return;
+
+        Vector3 constrainedPosition = GetConstrainedPosition(_rigidbody.position);
+        if (preserveFixedY)
+        {
+            constrainedPosition.y = _fixedY;
+        }
+
+        _rigidbody.position = constrainedPosition;
+        _rigidbody.linearVelocity = Vector3.zero;
+        _rigidbody.angularVelocity = Vector3.zero;
+        transform.position = constrainedPosition;
+        _fixedY = constrainedPosition.y;
+        _currentCell = GetCell(constrainedPosition);
+    }
+
+    private Vector3 GetConstrainedPosition(Vector3 worldPosition)
+    {
+        Vector3 constrainedPosition = worldPosition;
+
+        if (_mapBoundary != null)
+        {
+            constrainedPosition = _mapBoundary.ClampWorldPosition(constrainedPosition);
+        }
+
+        if (_grid != null)
+        {
+            constrainedPosition = _grid.Snap(constrainedPosition);
+
+            if (_mapBoundary != null && !_mapBoundary.ContainsWorldPosition(constrainedPosition))
+            {
+                constrainedPosition = FindNearestSnappedPositionInsideBoundary(constrainedPosition);
+            }
+        }
+
+        return constrainedPosition;
+    }
+
+    private Vector3 FindNearestSnappedPositionInsideBoundary(Vector3 worldPosition)
+    {
+        if (_grid == null || _mapBoundary == null)
+        {
+            return worldPosition;
+        }
+
+        Vector3 clampedPosition = _mapBoundary.ClampWorldPosition(worldPosition);
+        Vector3 snappedPosition = _grid.Snap(clampedPosition);
+        if (_mapBoundary.ContainsWorldPosition(snappedPosition))
+        {
+            return snappedPosition;
+        }
+
+        float cellSize = Mathf.Max(0.01f, _grid.CellSize);
+        Vector3 bestCandidate = clampedPosition;
+        float bestDistance = float.MaxValue;
+
+        for (int xOffset = -3; xOffset <= 3; xOffset++)
+        {
+            for (int zOffset = -3; zOffset <= 3; zOffset++)
+            {
+                Vector3 candidate = snappedPosition + new Vector3(xOffset * cellSize, 0f, zOffset * cellSize);
+                candidate.y = clampedPosition.y;
+                if (!_mapBoundary.ContainsWorldPosition(candidate))
+                {
+                    continue;
+                }
+
+                float distance = (candidate - clampedPosition).sqrMagnitude;
+                if (distance >= bestDistance)
+                {
+                    continue;
+                }
+
+                bestDistance = distance;
+                bestCandidate = candidate;
+            }
+        }
+
+        return bestCandidate;
     }
 }

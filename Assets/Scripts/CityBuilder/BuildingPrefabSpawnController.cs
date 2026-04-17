@@ -1,4 +1,5 @@
 using System;
+using CityBuilder;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Events;
@@ -41,6 +42,7 @@ namespace CityBuilderVR
 
         [Header("Placement Mode")]
         [SerializeField] bool m_UsePreviewPlacement = true;
+        [SerializeField] XRRayInteractor m_PreviewRayInteractor;
         [SerializeField] Transform m_PreviewFollowOrigin;
         [SerializeField] LayerMask m_PreviewRaycastMask = ~0;
         [SerializeField, Min(0.5f)] float m_PreviewRayDistance = 100f;
@@ -120,7 +122,7 @@ namespace CityBuilderVR
         void Start()
         {
             ResolveReferences();
-            TryAutoAssignPreviewFollowOrigin();
+            ResolvePreviewPlacementSource();
         }
 
         void OnEnable()
@@ -147,6 +149,8 @@ namespace CityBuilderVR
             {
                 return;
             }
+
+            ResolvePreviewPlacementSource();
 
             if (m_UsePreviewPlacement && m_PreviewInstance != null)
             {
@@ -349,23 +353,24 @@ namespace CityBuilderVR
 
             ResolvePlacementService();
             BuildingDefinitionSO definition = ResolveBuildingDefinition(prefab);
+            Vector3 sanitizedPosition = SanitizeSpawnPosition(position);
             if (m_BuildingPlacementService != null &&
-                !m_BuildingPlacementService.CanPlace(prefab, definition, position, true, out string placementError))
+                !m_BuildingPlacementService.CanPlace(prefab, definition, sanitizedPosition, true, out string placementError))
             {
                 Debug.LogWarning(placementError, this);
                 return null;
             }
 
             GameObject instance = parent != null
-                ? Instantiate(prefab, position, rotation, parent)
-                : Instantiate(prefab, position, rotation);
+                ? Instantiate(prefab, sanitizedPosition, rotation, parent)
+                : Instantiate(prefab, sanitizedPosition, rotation);
 
             ApplyDefinitionToInstance(instance, definition);
 
             SetupGridPlacement(instance);
 
             if (m_BuildingPlacementService != null &&
-                !m_BuildingPlacementService.FinalizePlacement(instance, definition, position, out string finalizeError))
+                !m_BuildingPlacementService.FinalizePlacement(instance, definition, sanitizedPosition, out string finalizeError))
             {
                 Debug.LogWarning(finalizeError, this);
                 DestroyGameObject(instance);
@@ -535,6 +540,7 @@ namespace CityBuilderVR
 
             Vector3 spawnPosition = placementPoint;
             spawnPosition.y += m_PreviewGroundOffset;
+            spawnPosition = SanitizeSpawnPosition(spawnPosition);
 
             Vector3 previewPosition = spawnPosition;
             previewPosition.y += m_PreviewLift;
@@ -582,6 +588,16 @@ namespace CityBuilderVR
 
         Ray BuildPlacementRay()
         {
+            ResolvePreviewPlacementSource();
+            if (IsUsablePreviewRayInteractor(m_PreviewRayInteractor))
+            {
+                m_PreviewRayInteractor.GetLineOriginAndDirection(out Vector3 origin, out Vector3 direction);
+                if (direction.sqrMagnitude > 0.000001f)
+                {
+                    return new Ray(origin, direction.normalized);
+                }
+            }
+
             if (m_PreviewFollowOrigin != null)
             {
                 return new Ray(m_PreviewFollowOrigin.position, m_PreviewFollowOrigin.forward);
@@ -598,36 +614,53 @@ namespace CityBuilderVR
             return new Ray(source.position, source.forward);
         }
 
-        void TryAutoAssignPreviewFollowOrigin()
+        void ResolvePreviewPlacementSource()
         {
-            if (!m_UsePreviewPlacement || m_PreviewFollowOrigin != null)
+            if (!m_UsePreviewPlacement)
             {
                 return;
             }
 
-            XRRayInteractor[] rayInteractors = FindObjectsByType<XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            if (rayInteractors == null || rayInteractors.Length == 0)
+            if (m_PreviewRayInteractor == null && m_PreviewFollowOrigin != null)
             {
-                return;
+                m_PreviewRayInteractor = m_PreviewFollowOrigin.GetComponentInParent<XRRayInteractor>();
             }
 
-            string handHint = m_ControllerNodeForPlacement == XRNode.LeftHand ? "left" : "right";
-            for (int i = 0; i < rayInteractors.Length; i++)
+            if (IsUsablePreviewRayInteractor(m_PreviewRayInteractor))
             {
-                XRRayInteractor interactor = rayInteractors[i];
-                if (interactor != null &&
-                    interactor.name.IndexOf(handHint, StringComparison.OrdinalIgnoreCase) >= 0)
+                Transform rayOrigin = ResolvePreviewRayOrigin(m_PreviewRayInteractor);
+                if (rayOrigin != null)
                 {
-                    m_PreviewFollowOrigin = interactor.transform;
-                    return;
+                    m_PreviewFollowOrigin = rayOrigin;
                 }
+
+                return;
             }
 
-            m_PreviewFollowOrigin = rayInteractors[0].transform;
+            XRRayInteractor bestInteractor = FindBestPreviewRayInteractor();
+            if (bestInteractor == null)
+            {
+                return;
+            }
+
+            m_PreviewRayInteractor = bestInteractor;
+            Transform bestRayOrigin = ResolvePreviewRayOrigin(bestInteractor);
+            if (bestRayOrigin != null)
+            {
+                m_PreviewFollowOrigin = bestRayOrigin;
+            }
         }
 
         bool TryGetPlacementPoint(Ray ray, out Vector3 point)
         {
+            ResolvePreviewPlacementSource();
+            if (IsUsablePreviewRayInteractor(m_PreviewRayInteractor) &&
+                m_PreviewRayInteractor.TryGetCurrent3DRaycastHit(out RaycastHit interactorHit))
+            {
+                point = interactorHit.point;
+                return true;
+            }
+
             if (Physics.Raycast(ray, out RaycastHit hit, m_PreviewRayDistance, m_PreviewRaycastMask, QueryTriggerInteraction.Ignore))
             {
                 point = hit.point;
@@ -647,6 +680,149 @@ namespace CityBuilderVR
 
             point = Vector3.zero;
             return false;
+        }
+
+        XRRayInteractor FindBestPreviewRayInteractor()
+        {
+            XRRayInteractor[] rayInteractors = FindObjectsByType<XRRayInteractor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (rayInteractors == null || rayInteractors.Length == 0)
+            {
+                return null;
+            }
+
+            XRRayInteractor bestInteractor = null;
+            int bestScore = int.MinValue;
+            for (int i = 0; i < rayInteractors.Length; i++)
+            {
+                XRRayInteractor interactor = rayInteractors[i];
+                if (!IsUsablePreviewRayInteractor(interactor))
+                {
+                    continue;
+                }
+
+                int score = ScorePreviewRayInteractor(interactor);
+                if (score <= bestScore)
+                {
+                    continue;
+                }
+
+                bestScore = score;
+                bestInteractor = interactor;
+            }
+
+            return bestInteractor;
+        }
+
+        int ScorePreviewRayInteractor(XRRayInteractor interactor)
+        {
+            if (interactor == null)
+            {
+                return int.MinValue;
+            }
+
+            int score = 0;
+            if (interactor.isActiveAndEnabled)
+            {
+                score += 1000;
+            }
+
+            if (interactor.gameObject.activeInHierarchy)
+            {
+                score += 400;
+            }
+
+            if (InteractorMatchesDesiredHand(interactor.transform))
+            {
+                score += 300;
+            }
+
+            if (InteractorMatchesOppositeHand(interactor.transform))
+            {
+                score -= 200;
+            }
+
+            if (TransformOrAncestorsContain(interactor.transform, "controller"))
+            {
+                score += 80;
+            }
+            else if (TransformOrAncestorsContain(interactor.transform, "hand"))
+            {
+                score += 40;
+            }
+
+            if (interactor.rayOriginTransform != null)
+            {
+                score += 50;
+            }
+
+            return score;
+        }
+
+        bool InteractorMatchesDesiredHand(Transform source)
+        {
+            return m_ControllerNodeForPlacement == XRNode.LeftHand
+                ? TransformOrAncestorsContainAny(source, "left controller", "left hand", "lefthand", "left")
+                : TransformOrAncestorsContainAny(source, "right controller", "right hand", "righthand", "right");
+        }
+
+        bool InteractorMatchesOppositeHand(Transform source)
+        {
+            return m_ControllerNodeForPlacement == XRNode.LeftHand
+                ? TransformOrAncestorsContainAny(source, "right controller", "right hand", "righthand", "right")
+                : TransformOrAncestorsContainAny(source, "left controller", "left hand", "lefthand", "left");
+        }
+
+        static bool TransformOrAncestorsContainAny(Transform source, params string[] keywords)
+        {
+            if (keywords == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < keywords.Length; i++)
+            {
+                if (TransformOrAncestorsContain(source, keywords[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool TransformOrAncestorsContain(Transform source, string keyword)
+        {
+            if (source == null || string.IsNullOrWhiteSpace(keyword))
+            {
+                return false;
+            }
+
+            for (Transform current = source; current != null; current = current.parent)
+            {
+                if (current.name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool IsUsablePreviewRayInteractor(XRRayInteractor interactor)
+        {
+            return interactor != null && interactor.enabled && interactor.gameObject.activeInHierarchy;
+        }
+
+        static Transform ResolvePreviewRayOrigin(XRRayInteractor interactor)
+        {
+            if (interactor == null)
+            {
+                return null;
+            }
+
+            return interactor.rayOriginTransform != null
+                ? interactor.rayOriginTransform
+                : interactor.transform;
         }
 
         void PreparePreviewInstance(GameObject preview)
@@ -891,123 +1067,95 @@ namespace CityBuilderVR
                 return;
             }
 
-            GridDefinition grid = ResolveGridDefinition();
-            if (grid == null)
+            RemovePlacementInteractionComponents(instance);
+            ConfigureStructureBodiesAsStatic(instance);
+        }
+
+        void RemovePlacementInteractionComponents(GameObject instance)
+        {
+            if (instance == null)
             {
                 return;
             }
 
-            Rigidbody body = instance.GetComponent<Rigidbody>();
-            bool addedBody = false;
-            if (body == null && m_AddRigidbodyIfMissing)
-            {
-                body = instance.AddComponent<Rigidbody>();
-                addedBody = true;
-            }
-
-            if (body != null && addedBody)
-            {
-                body.mass = Mathf.Max(0.01f, m_SpawnedBodyMass);
-                body.useGravity = m_EnableGravityOnSpawn;
-                body.isKinematic = false;
-
-                if (m_ConfigurePhysicsLikeTestCube)
-                {
-                    body.interpolation = RigidbodyInterpolation.Interpolate;
-                    body.collisionDetectionMode = CollisionDetectionMode.Continuous;
-                    body.constraints =
-                        RigidbodyConstraints.FreezePositionY |
-                        RigidbodyConstraints.FreezeRotationX |
-                        RigidbodyConstraints.FreezeRotationZ;
-                }
-            }
-
-            XRGrabInteractable grab = instance.GetComponent<XRGrabInteractable>();
-            bool addedGrab = false;
-            if (grab == null && m_AddGrabInteractableIfMissing)
-            {
-                grab = instance.AddComponent<XRGrabInteractable>();
-                addedGrab = true;
-            }
-
-            if (grab != null)
-            {
-                grab.colliders.Clear();
-                Collider[] allColliders = instance.GetComponentsInChildren<Collider>(true);
-                for (int i = 0; i < allColliders.Length; i++)
-                {
-                    Collider collider = allColliders[i];
-                    if (collider == null || collider.GetComponentInParent<XRSimpleInteractable>() != null)
-                    {
-                        continue;
-                    }
-
-                    grab.colliders.Add(collider);
-                }
-            }
-
-            if (grab != null && addedGrab && m_ConfigureGrabLikeTestCube)
-            {
-                grab.useDynamicAttach = false;
-                grab.matchAttachPosition = true;
-                grab.matchAttachRotation = true;
-                grab.snapToColliderVolume = true;
-                grab.movementType = XRBaseInteractable.MovementType.VelocityTracking;
-                grab.trackPosition = true;
-                grab.trackRotation = true;
-                grab.trackScale = true;
-                grab.throwOnDetach = false;
-                grab.forceGravityOnDetach = false;
-            }
-
-            GridMovementConstraint gridConstraint = instance.GetComponent<GridMovementConstraint>();
-            if (gridConstraint == null && m_AddGridMovementConstraintIfMissing)
-            {
-                gridConstraint = instance.AddComponent<GridMovementConstraint>();
-            }
-
-            if (instance.GetComponent<HorizontalGrabConstraint>() == null && m_AddHorizontalGrabConstraintIfMissing)
-            {
-                instance.AddComponent<HorizontalGrabConstraint>();
-            }
-
-            if (gridConstraint != null)
-            {
-                gridConstraint.SetGrid(grid);
-            }
-
-            if (m_AddScaleHandlesIfMissing)
-            {
-                RuntimeScaleHandleFactory.EnsureHandles(instance, grid, m_ScaleHandleVisualSize, m_ScaleHandleOffset);
-            }
+            DestroyComponents(instance.GetComponentsInChildren<GridMovementConstraint>(true));
+            DestroyComponents(instance.GetComponentsInChildren<HorizontalGrabConstraint>(true));
+            DestroyComponents(instance.GetComponentsInChildren<XRGrabInteractable>(true));
+            DestroyComponents(instance.GetComponentsInChildren<HandleManager>(true));
 
             ScaleHandle[] scaleHandles = instance.GetComponentsInChildren<ScaleHandle>(true);
             for (int i = 0; i < scaleHandles.Length; i++)
             {
-                if (scaleHandles[i] != null)
-                {
-                    scaleHandles[i].SetGrid(grid);
-                }
-            }
-
-            XRSimpleInteractable[] handleInteractables = instance.GetComponentsInChildren<XRSimpleInteractable>(true);
-            for (int i = 0; i < handleInteractables.Length; i++)
-            {
-                XRSimpleInteractable handle = handleInteractables[i];
-                if (handle == null)
+                ScaleHandle scaleHandle = scaleHandles[i];
+                if (scaleHandle == null)
                 {
                     continue;
                 }
 
-                handle.colliders.Clear();
-                Collider[] ownColliders = handle.GetComponents<Collider>();
-                for (int j = 0; j < ownColliders.Length; j++)
+                DestroyGameObject(scaleHandle.gameObject);
+            }
+
+            Transform handlesRoot = instance.transform.Find("Handlers");
+            if (handlesRoot != null)
+            {
+                DestroyGameObject(handlesRoot.gameObject);
+            }
+        }
+
+        void ConfigureStructureBodiesAsStatic(GameObject instance)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            Rigidbody[] rigidbodies = instance.GetComponentsInChildren<Rigidbody>(true);
+            for (int i = 0; i < rigidbodies.Length; i++)
+            {
+                Rigidbody body = rigidbodies[i];
+                if (body == null)
                 {
-                    if (ownColliders[j] != null)
-                    {
-                        handle.colliders.Add(ownColliders[j]);
-                    }
+                    continue;
                 }
+
+                body.useGravity = false;
+                body.isKinematic = true;
+                body.detectCollisions = true;
+                body.interpolation = RigidbodyInterpolation.None;
+                body.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                body.constraints = RigidbodyConstraints.FreezeAll;
+                body.linearVelocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+            }
+        }
+
+        void DestroyComponents<T>(T[] components) where T : Component
+        {
+            if (components == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < components.Length; i++)
+            {
+                DestroyComponent(components[i]);
+            }
+        }
+
+        void DestroyComponent(Component component)
+        {
+            if (component == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(component);
+            }
+            else
+            {
+                DestroyImmediate(component);
             }
         }
 
@@ -1211,6 +1359,78 @@ namespace CityBuilderVR
             }
 
             return m_GridDefinition;
+        }
+
+        Vector3 SanitizeSpawnPosition(Vector3 worldPosition)
+        {
+            GridDefinition grid = ResolveGridDefinition();
+            MapBoundary boundary = ResolveMapBoundary();
+            if (grid == null && boundary == null)
+            {
+                return worldPosition;
+            }
+
+            Vector3 sanitizedPosition = worldPosition;
+            if (boundary != null)
+            {
+                sanitizedPosition = boundary.ClampWorldPosition(sanitizedPosition);
+            }
+
+            if (grid == null)
+            {
+                return sanitizedPosition;
+            }
+
+            return SnapInsideBoundary(sanitizedPosition, grid, boundary);
+        }
+
+        static Vector3 SnapInsideBoundary(Vector3 worldPosition, GridDefinition grid, MapBoundary boundary)
+        {
+            Vector3 snappedPosition = grid.Snap(worldPosition);
+            if (boundary == null || boundary.ContainsWorldPosition(snappedPosition))
+            {
+                return snappedPosition;
+            }
+
+            Vector3 clampedPosition = boundary.ClampWorldPosition(worldPosition);
+            snappedPosition = grid.Snap(clampedPosition);
+            if (boundary.ContainsWorldPosition(snappedPosition))
+            {
+                return snappedPosition;
+            }
+
+            float cellSize = Mathf.Max(0.01f, grid.CellSize);
+            Vector3 bestCandidate = clampedPosition;
+            float bestDistance = float.MaxValue;
+
+            for (int xOffset = -3; xOffset <= 3; xOffset++)
+            {
+                for (int zOffset = -3; zOffset <= 3; zOffset++)
+                {
+                    Vector3 candidate = snappedPosition + new Vector3(xOffset * cellSize, 0f, zOffset * cellSize);
+                    candidate.y = clampedPosition.y;
+                    if (!boundary.ContainsWorldPosition(candidate))
+                    {
+                        continue;
+                    }
+
+                    float distance = (candidate - clampedPosition).sqrMagnitude;
+                    if (distance >= bestDistance)
+                    {
+                        continue;
+                    }
+
+                    bestDistance = distance;
+                    bestCandidate = candidate;
+                }
+            }
+
+            return bestCandidate;
+        }
+
+        static MapBoundary ResolveMapBoundary()
+        {
+            return MapBoundary.TryGetActiveBoundary(out MapBoundary boundary) ? boundary : null;
         }
 
         Quaternion ResolveRotation(Transform source)
