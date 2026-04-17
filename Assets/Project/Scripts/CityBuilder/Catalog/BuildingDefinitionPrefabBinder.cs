@@ -8,8 +8,6 @@ namespace CityBuilderVR
         [SerializeField] Transform m_ModelRoot;
         [SerializeField] bool m_RenameInstanceFromDefinition = true;
         [SerializeField] bool m_ApplyRootLayerToModel = true;
-        [SerializeField] bool m_NormalizeModelBounds = true;
-        [SerializeField, Min(0.01f)] float m_TargetMaxDimension = 0.2f;
         [SerializeField] bool m_CenterModelHorizontally = true;
         [SerializeField] bool m_AlignModelToGround = true;
         [SerializeField] bool m_SyncRootBoxColliderToModel = true;
@@ -50,17 +48,13 @@ namespace CityBuilderVR
             Transform modelTransform = modelInstance.transform;
             modelTransform.localPosition = Vector3.zero;
             modelTransform.localRotation = Quaternion.identity;
-            modelTransform.localScale = Vector3.one;
 
             if (m_ApplyRootLayerToModel)
             {
                 SetLayerRecursively(modelTransform, gameObject.layer);
             }
 
-            if (m_NormalizeModelBounds)
-            {
-                NormalizeModel(modelTransform);
-            }
+            AlignModel(modelTransform);
 
             if (m_SyncRootBoxColliderToModel)
             {
@@ -109,18 +103,11 @@ namespace CityBuilderVR
             m_RuntimeModelInstance = null;
         }
 
-        void NormalizeModel(Transform modelTransform)
+        void AlignModel(Transform modelTransform)
         {
-            if (modelTransform == null || !TryCalculateWorldBounds(modelTransform, out Bounds worldBounds))
+            if (modelTransform == null)
             {
                 return;
-            }
-
-            float maxDimension = Mathf.Max(worldBounds.size.x, worldBounds.size.y, worldBounds.size.z);
-            if (maxDimension > 0.0001f)
-            {
-                float normalizationScale = m_TargetMaxDimension / maxDimension;
-                modelTransform.localScale *= normalizationScale;
             }
 
             if (!TryCalculateLocalBounds(modelTransform, transform, out Bounds localBounds))

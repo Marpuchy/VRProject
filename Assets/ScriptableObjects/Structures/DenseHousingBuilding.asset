@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fe9187c0c7cc16fd8ceef98f0f10a2c, type: 3}
+  m_Name: DenseHousingBuilding
+  m_EditorClassIdentifier: Assembly-CSharp::CityBuilderVR.BuildingDefinitionSO
+  m_Id: dense_housing
+  m_DisplayName: Dense Housing
+  m_Icon: {fileID: 21300000, guid: 49b660bf476173744911886019d8e724, type: 3}
+  m_ModelPrefab: {fileID: 6698971214814126596, guid: 8ea3325daa88b81439f6234898faf65c,
+    type: 3}
+  m_BuildPrefab: {fileID: 1000000000000000000, guid: 6db28305b7514a6e8e6f8324f953b632,
+    type: 3}
+  m_Prefab: {fileID: 1000000000000000000, guid: 6db28305b7514a6e8e6f8324f953b632,
+    type: 3}
+  m_StartUnlocked: 0
+  m_RequiredLevel: 3
+  m_BuildCost: 560
+  m_MaintenanceCostPerTick: 7
+  m_ExperienceReward: 24
+  m_Category: 0
+  m_PopulationCapacity: 45
+  m_IncomePerTick: 0
+  m_FlatHappinessBonus: -1.5
+  m_RequiredResources:
+  - {fileID: 11400000, guid: 70b7723ebe8918e0f9a2cb4a481ef412, type: 2}
+  - {fileID: 11400000, guid: cc66777299ad0453bbd79c595e656e57, type: 2}
+  - {fileID: 11400000, guid: 3231e8aeb7a5a1caf8c06467907cfd9d, type: 2}
+  - {fileID: 11400000, guid: 295909e91f0de38a29d1de714d10e9f2, type: 2}
+  m_ProvidedResourceAreas: []
+  m_ResourceOutputs: []
+  m_ResourceDemands: []

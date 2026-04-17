@@ -38,7 +38,6 @@ namespace CityBuilderVR
         [SerializeField] bool m_SpawnOnSelection = true;
         [SerializeField] bool m_UseSpawnPointRotation = true;
         [SerializeField] bool m_ForceIdentityRotation = true;
-        [SerializeField] bool m_UseSpawnPointScale;
 
         [Header("Placement Mode")]
         [SerializeField] bool m_UsePreviewPlacement = true;
@@ -362,11 +361,6 @@ namespace CityBuilderVR
                 : Instantiate(prefab, position, rotation);
 
             ApplyDefinitionToInstance(instance, definition);
-
-            if (m_UseSpawnPointScale && m_DefaultSpawnPoint != null)
-            {
-                instance.transform.localScale = m_DefaultSpawnPoint.localScale;
-            }
 
             SetupGridPlacement(instance);
 
