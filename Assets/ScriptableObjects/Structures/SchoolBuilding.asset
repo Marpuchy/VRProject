@@ -19,6 +19,7 @@ MonoBehaviour:
     type: 3}
   m_BuildPrefab: {fileID: 1000000000000000000, guid: 6db28305b7514a6e8e6f8324f953b632,
     type: 3}
+  m_ModelVerticalOffset: -0.01
   m_Prefab: {fileID: 2853952606427955886, guid: cf6676659b191fe4fbde8d127813b0c4,
     type: 3}
   m_StartUnlocked: 1

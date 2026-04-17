@@ -31,10 +31,10 @@ namespace CityBuilderVR
                 gameObject.name = definition.DisplayName;
             }
 
-            RebuildModel(definition.ModelPrefab);
+            RebuildModel(definition.ModelPrefab, definition.ModelVerticalOffset);
         }
 
-        void RebuildModel(GameObject modelPrefab)
+        void RebuildModel(GameObject modelPrefab, float verticalOffset)
         {
             ClearRuntimeModel();
 
@@ -54,7 +54,7 @@ namespace CityBuilderVR
                 SetLayerRecursively(modelTransform, gameObject.layer);
             }
 
-            AlignModel(modelTransform);
+            AlignModel(modelTransform, verticalOffset);
 
             if (m_SyncRootBoxColliderToModel)
             {
@@ -103,7 +103,7 @@ namespace CityBuilderVR
             m_RuntimeModelInstance = null;
         }
 
-        void AlignModel(Transform modelTransform)
+        void AlignModel(Transform modelTransform, float verticalOffset)
         {
             if (modelTransform == null)
             {
@@ -128,6 +128,7 @@ namespace CityBuilderVR
                 localOffset.y = -localBounds.min.y;
             }
 
+            localOffset.y += verticalOffset;
             modelTransform.localPosition += localOffset;
         }
 

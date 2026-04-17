@@ -13,6 +13,7 @@ namespace CityBuilderVR
         [SerializeField] Sprite m_Icon;
         [SerializeField] GameObject m_ModelPrefab;
         [SerializeField] GameObject m_BuildPrefab;
+        [SerializeField] float m_ModelVerticalOffset;
 
         [Header("Legacy Direct Prefab")]
         [SerializeField] GameObject m_Prefab;
@@ -42,6 +43,7 @@ namespace CityBuilderVR
         public GameObject ModelPrefab => ResolveModelPrefab();
         public GameObject BuildPrefab => m_BuildPrefab;
         public GameObject Prefab => ResolveSpawnPrefab();
+        public float ModelVerticalOffset => m_ModelVerticalOffset;
         public bool StartUnlocked => m_StartUnlocked;
         public int RequiredLevel => Mathf.Max(1, m_RequiredLevel);
         public int BuildCost => m_BuildCost;

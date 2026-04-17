@@ -174,7 +174,7 @@ MonoBehaviour:
   m_DefaultSpawnParent: {fileID: 0}
   m_SpawnOnSelection: 1
   m_UseSpawnPointRotation: 1
-  m_ForceIdentityRotation: 1
+  m_ForceIdentityRotation: 0
   m_UseSpawnPointScale: 0
   m_UsePreviewPlacement: 1
   m_PreviewFollowOrigin: {fileID: 0}

@@ -38,7 +38,7 @@ namespace CityBuilderVR
         [SerializeField] Transform m_DefaultSpawnParent;
         [SerializeField] bool m_SpawnOnSelection = true;
         [SerializeField] bool m_UseSpawnPointRotation = true;
-        [SerializeField] bool m_ForceIdentityRotation = true;
+        [SerializeField] bool m_ForceIdentityRotation = false;
 
         [Header("Placement Mode")]
         [SerializeField] bool m_UsePreviewPlacement = true;
@@ -303,7 +303,7 @@ namespace CityBuilderVR
                 return;
             }
 
-            m_CurrentPreviewYaw += deltaYawDegrees;
+            m_CurrentPreviewYaw = NormalizeAngle360(SnapAngleToStep(m_CurrentPreviewYaw + deltaYawDegrees));
             UpdatePreviewTransform();
         }
 
@@ -492,16 +492,16 @@ namespace CityBuilderVR
             ResetXRInputEdgeState();
             BuildingDefinitionSO definition = ResolveBuildingDefinition(prefab);
 
-            Quaternion startRotation = ResolveRotation(m_DefaultSpawnPoint != null ? m_DefaultSpawnPoint : transform);
-            m_CurrentPreviewYaw = startRotation.eulerAngles.y;
+            Quaternion startRotation = ResolvePreviewStartRotation(m_DefaultSpawnPoint != null ? m_DefaultSpawnPoint : transform);
+            m_CurrentPreviewYaw = 0f;
 
             m_PreviewInstance = m_DefaultSpawnParent != null
-                ? Instantiate(prefab, Vector3.zero, Quaternion.Euler(0f, m_CurrentPreviewYaw, 0f), m_DefaultSpawnParent)
-                : Instantiate(prefab, Vector3.zero, Quaternion.Euler(0f, m_CurrentPreviewYaw, 0f));
+                ? Instantiate(prefab, Vector3.zero, startRotation, m_DefaultSpawnParent)
+                : Instantiate(prefab, Vector3.zero, startRotation);
 
             ApplyDefinitionToInstance(m_PreviewInstance, definition);
             PreparePreviewInstance(m_PreviewInstance);
-            m_PreviewGroundOffset = ComputeGroundOffset(m_PreviewInstance);
+            m_PreviewGroundOffset = ComputeGroundOffset(m_PreviewInstance, definition);
             m_LastPreviewValidity = true;
 
             UpdatePreviewTransform();
@@ -545,7 +545,7 @@ namespace CityBuilderVR
             Vector3 previewPosition = spawnPosition;
             previewPosition.y += m_PreviewLift;
 
-            Quaternion rotation = ResolvePreviewRotation();
+            Quaternion rotation = ResolvePreviewRotation(spawnPosition);
             m_PreviewInstance.transform.SetPositionAndRotation(previewPosition, rotation);
 
             m_LastPreviewWorldPosition = spawnPosition;
@@ -559,14 +559,15 @@ namespace CityBuilderVR
             }
         }
 
-        Quaternion ResolvePreviewRotation()
+        Quaternion ResolvePreviewRotation(Vector3 previewWorldPosition)
         {
             if (m_ForceIdentityRotation)
             {
                 return Quaternion.identity;
             }
 
-            return Quaternion.Euler(0f, m_CurrentPreviewYaw, 0f);
+            float facingYaw = ResolvePreviewFacingYaw(previewWorldPosition);
+            return Quaternion.Euler(0f, SnapAngleToStep(facingYaw + m_CurrentPreviewYaw), 0f);
         }
 
         bool CanPlaceAtPreviewPosition(Vector3 worldPosition)
@@ -584,6 +585,59 @@ namespace CityBuilderVR
 
             BuildingDefinitionSO definition = ResolveBuildingDefinition(m_SelectedPrefab);
             return m_BuildingPlacementService.CanPlace(m_SelectedPrefab, definition, worldPosition, false, out _);
+        }
+
+        Quaternion ResolvePreviewStartRotation(Transform source)
+        {
+            if (m_ForceIdentityRotation || source == null)
+            {
+                return Quaternion.identity;
+            }
+
+            return m_UseSpawnPointRotation
+                ? Quaternion.Euler(0f, SnapAngleToStep(source.eulerAngles.y), 0f)
+                : Quaternion.identity;
+        }
+
+        float ResolvePreviewFacingYaw(Vector3 previewWorldPosition)
+        {
+            Transform observer = ResolvePreviewObserver();
+            if (observer == null)
+            {
+                Transform fallbackSource = m_DefaultSpawnPoint != null ? m_DefaultSpawnPoint : transform;
+                return ResolvePreviewStartRotation(fallbackSource).eulerAngles.y;
+            }
+
+            Vector3 toObserver = observer.position - previewWorldPosition;
+            toObserver.y = 0f;
+            if (toObserver.sqrMagnitude <= 0.0001f)
+            {
+                Transform fallbackSource = m_DefaultSpawnPoint != null ? m_DefaultSpawnPoint : transform;
+                return ResolvePreviewStartRotation(fallbackSource).eulerAngles.y;
+            }
+
+            return Quaternion.LookRotation(toObserver.normalized, Vector3.up).eulerAngles.y;
+        }
+
+        Transform ResolvePreviewObserver()
+        {
+            Camera mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                return mainCamera.transform;
+            }
+
+            if (m_PreviewFollowOrigin != null)
+            {
+                return m_PreviewFollowOrigin;
+            }
+
+            if (m_DefaultSpawnPoint != null)
+            {
+                return m_DefaultSpawnPoint;
+            }
+
+            return transform;
         }
 
         Ray BuildPlacementRay()
@@ -952,16 +1006,23 @@ namespace CityBuilderVR
             }
         }
 
-        float ComputeGroundOffset(GameObject target)
+        float ComputeGroundOffset(GameObject target, BuildingDefinitionSO definition = null)
         {
             if (target == null)
             {
                 return 0f;
             }
 
-            return TryGetPlacementBounds(target, out Bounds combinedBounds)
+            float groundOffset = TryGetPlacementBounds(target, out Bounds combinedBounds)
                 ? target.transform.position.y - combinedBounds.min.y
                 : 0f;
+
+            if (definition != null)
+            {
+                groundOffset += definition.ModelVerticalOffset;
+            }
+
+            return groundOffset;
         }
 
         static bool TryGetPlacementBounds(GameObject target, out Bounds bounds)
@@ -1361,6 +1422,17 @@ namespace CityBuilderVR
             return m_GridDefinition;
         }
 
+        float SnapAngleToStep(float angleDegrees)
+        {
+            float step = Mathf.Max(1f, m_RotationStepDegrees);
+            return Mathf.Round(angleDegrees / step) * step;
+        }
+
+        static float NormalizeAngle360(float angleDegrees)
+        {
+            return Mathf.Repeat(angleDegrees, 360f);
+        }
+
         Vector3 SanitizeSpawnPosition(Vector3 worldPosition)
         {
             GridDefinition grid = ResolveGridDefinition();
@@ -1440,7 +1512,9 @@ namespace CityBuilderVR
                 return Quaternion.identity;
             }
 
-            return m_UseSpawnPointRotation ? source.rotation : Quaternion.identity;
+            return m_UseSpawnPointRotation
+                ? Quaternion.Euler(0f, SnapAngleToStep(source.eulerAngles.y), 0f)
+                : Quaternion.identity;
         }
 
         void DestroyGameObject(GameObject target)
