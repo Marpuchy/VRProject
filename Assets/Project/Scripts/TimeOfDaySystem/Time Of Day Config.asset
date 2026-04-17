@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Time Of Day Config
   m_EditorClassIdentifier: Assembly-CSharp::TimeOfDayConfig
   startHour: 5.8
-  dayDurationInMinutes: 1
+  dayDurationInMinutes: 10
   lightIntensityCurve:
     serializedVersion: 2
     m_Curve:

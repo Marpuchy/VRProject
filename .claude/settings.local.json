@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(awk -F: '{print NR\": \"$0}')",
+      "Bash(awk 'NR>=12380 && NR<=12420' \"G:/UnityProyects/VRProject/Assets/VRMPAssets/Prefabs/PlayerPrefabs/XRMPT_XR_Origin_Setup.prefab\")",
+      "Bash(awk 'NR>=33600 && NR<=33660' \"G:/UnityProyects/VRProject/Assets/VRMPAssets/Prefabs/PlayerPrefabs/XRMPT_XR_Origin_Setup.prefab\")",
+      "Bash(python3 -c \" import json with open\\('G:/UnityProyects/VRProject/Assets/Samples/XR Interaction Toolkit/3.3.0/Starter Assets/XRI Default Input Actions.inputactions'\\) as f: data = json.load\\(f\\) for mp in data.get\\('maps', []\\): for action in mp.get\\('actions', []\\): if 'UI Press' in action.get\\('name', ''\\) and 'RightHand' not in mp.get\\('name',''\\) and 'LeftHand' not in mp.get\\('name',''\\): print\\(f\\\\\"Map: {mp['name']}, Action: {action['name']}\\\\\"\\) \")"
+    ]
+  }
+}

@@ -88,7 +88,7 @@ namespace CityBuilderVR
 
             List<BuildingPanelUI.BuildingSlotData> slots = new();
             m_SlotDefinitions.Clear();
-            int skippedWithoutSpawnPrefabCount = 0;
+            int skippedWithoutPrefabCount = 0;
 
             if (m_Catalog != null)
             {
@@ -101,18 +101,18 @@ namespace CityBuilderVR
                         continue;
                     }
 
-                    GameObject spawnPrefab = definition.Prefab;
-                    if (!m_IncludeDefinitionsWithoutPrefab && spawnPrefab == null)
+                    if (!m_IncludeDefinitionsWithoutPrefab && definition.Prefab == null)
                     {
-                        skippedWithoutSpawnPrefabCount++;
+                        skippedWithoutPrefabCount++;
                         continue;
                     }
 
                     slots.Add(new BuildingPanelUI.BuildingSlotData
                     {
                         slotName = definition.DisplayName,
-                        buildingPrefab = spawnPrefab,
-                        icon = definition.Icon
+                        buildingPrefab = definition.Prefab,
+                        icon = definition.Icon,
+                        category = BuildingPanelUI.FromSimulationCategory(definition.Category)
                     });
                     m_SlotDefinitions.Add(definition);
                 }
@@ -126,10 +126,10 @@ namespace CityBuilderVR
 
             if (slots.Count == 0)
             {
-                if (skippedWithoutSpawnPrefabCount > 0)
+                if (skippedWithoutPrefabCount > 0)
                 {
                     Debug.LogWarning(
-                        $"BuildingPanelCatalogBinder produced 0 visible slots. {skippedWithoutSpawnPrefabCount} building definitions were skipped because they do not have a spawn prefab or 3D model assigned.",
+                        $"BuildingPanelCatalogBinder produced 0 visible slots. {skippedWithoutPrefabCount} building definitions were skipped because they do not have a prefab assigned.",
                         this);
                 }
                 else if (m_Catalog != null)
